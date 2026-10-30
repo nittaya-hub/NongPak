@@ -1,0 +1,12 @@
+Copyright (c) 2026 nittaya-hub (น้องปาก). All rights reserved.
+
+สงวนลิขสิทธิ์ทั้งหมด ห้ามคัดลอก ดัดแปลง เผยแพร่ จำหน่าย หรือนำโค้ด เนื้อหา ภาพ ตัวละคร "น้องปาก"
+และไฟล์เสียงในที่เก็บนี้ไปใช้ ไม่ว่าทั้งหมดหรือบางส่วน โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเจ้าของ
+
+No part of this repository (code, content, images, the "Nong Pak" character, or audio)
+may be copied, modified, distributed, sold, or used without prior written permission
+from the copyright owner.
+
+Third-party components keep their own licenses:
+- hw.js: Hanzi Writer (MIT License)
+- k*.js stroke data: derived from hanzi-writer-data / Make Me a Hanzi (Arphic Public License)
