@@ -276,3 +276,17 @@ nav.tabs{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:non
 .musicbtn s{text-decoration-thickness:2px}
 .wlist span[data-say]{cursor:pointer}
 .wlist span[data-say]:hover{border-color:var(--accent)}
+/* livelier mascot: it wiggles, sways its arms and looks around */
+.pk.idle .all{animation:pk-wiggle 1.9s ease-in-out infinite}
+.pk.idle .armL{animation:pk-swayL 1.9s ease-in-out infinite}
+.pk.idle .armR{animation:pk-swayR 1.9s ease-in-out infinite}
+.pk.idle .pup{animation:pk-look 3.8s ease-in-out infinite}
+.pk.think .all{animation:pk-ponder 2.2s ease-in-out infinite}
+.pk.talk .all{animation:pk-wiggle 1s ease-in-out infinite}
+.pk.sleep .all{animation:pk-breathe 2.4s ease-in-out infinite}
+@keyframes pk-wiggle{0%,100%{transform:translateY(0) rotate(0) scale(1,1)}20%{transform:translateY(-9px) rotate(-4deg) scale(.98,1.03)}45%{transform:translateY(0) rotate(0) scale(1.05,.95)}70%{transform:translateY(-9px) rotate(4deg) scale(.98,1.03)}}
+@keyframes pk-swayL{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}70%{transform:rotate(8deg)}}
+@keyframes pk-swayR{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}70%{transform:rotate(18deg)}}
+@keyframes pk-ponder{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-6deg) translateY(-4px)}}
+/* even with "reduce motion" on, the mascot keeps a gentle bob (small, slow, no flashing) */
+@media (prefers-reduced-motion:reduce){.pk .all,.pk.idle .all{animation:pk-bob 3s ease-in-out infinite!important}}

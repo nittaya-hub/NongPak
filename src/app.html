@@ -572,7 +572,7 @@ function goalPicker(current){
 }
 function weak(){return deck().filter(c=>(st(c.id)||{}).l>0).sort((x,y)=>st(y.id).l-st(x.id).l).slice(0,12)}
 function weekChart(){
-  const s=S(),days=[];for(let i=6;i>=0;i--){const t=Date.now()-i*DAY;days.push({k:dayKey(t),lab:new Date(t).toLocaleDateString("th-TH",{weekday:"narrow"})})}
+  const s=S(),days=[];for(let i=6;i>=0;i--){const t=Date.now()-i*DAY;days.push({k:dayKey(t),lab:new Date(t).toLocaleDateString(window.LOC?LOC():"th-TH",{weekday:"narrow"})})}
   const vals=days.map(d=>(s.log||{})[d.k]||0),mx=Math.max(plan().xp,...vals);
   return`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:96px">${days.map((d,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span style="font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${vals[i]||""}</span><div style="width:100%;max-width:28px;border-radius:6px 6px 2px 2px;background:${vals[i]>=plan().xp?"var(--good)":vals[i]?"var(--xp)":"var(--soft)"};height:${Math.max(4,Math.round(vals[i]/mx*60))}px"></div><span style="font-size:11.5px;color:${i===6?"var(--ink)":"var(--muted)"};font-weight:${i===6?700:400}">${d.lab}</span></div>`).join("")}</div>`;
 }
@@ -633,7 +633,7 @@ function viewToday(){
       <button class="ghost" id="r-weak" ${weak().length?"":"disabled"}>ประโยคที่พลาดบ่อย${weak().length?" ("+weak().length+")":""}</button>
     </div>
     ${learned<4?`<p class="hint">ยังเรียนไม่ถึง 4 ประโยค เกมจะสุ่มประโยคพื้นฐานมาให้ลองก่อน</p>`:""}
-    ${(s.tests||[]).length?`<div class="list">${s.tests.slice(-3).reverse().map(t=>`<div class="item" style="grid-template-columns:1fr auto"><div class="m" style="font-weight:600">${esc(t.title)}</div><div class="side" style="grid-row:1 / span 2"><span class="chip ${t.pct>=75?"ok":"warn"}">${t.pct}%</span></div><div class="s">${new Date(t.d).toLocaleDateString("th-TH",{day:"numeric",month:"short"})} · ${t.n} ข้อ · ${t.score} คะแนน</div></div>`).join("")}</div>`:""}
+    ${(s.tests||[]).length?`<div class="list">${s.tests.slice(-3).reverse().map(t=>`<div class="item" style="grid-template-columns:1fr auto"><div class="m" style="font-weight:600">${esc(t.title)}</div><div class="side" style="grid-row:1 / span 2"><span class="chip ${t.pct>=75?"ok":"warn"}">${t.pct}%</span></div><div class="s">${new Date(t.d).toLocaleDateString(window.LOC?LOC():"th-TH",{day:"numeric",month:"short"})} · ${t.n} ข้อ · ${t.score} คะแนน</div></div>`).join("")}</div>`:""}
   </div>
   <div class="panel" style="display:flex;flex-direction:column;gap:10px">
     <div class="row-flex" style="justify-content:space-between;flex-wrap:wrap">
@@ -920,7 +920,7 @@ function resolveQ(ok,timeout){
   if(ok){T.right++;T.combo++;const pts=(q.type==="match"?0:100)+Math.round(left*5)+(T.combo>=2?T.combo*10:0);T.score+=pts;addXP(4);
     if(q.c)speak(q.c.t);
     drawQ({cls:"good",msg:(T.combo>=3?"ติดกัน "+T.combo+" ข้อ! ":"ถูกต้อง! ")+"+"+pts});
-    setTimeout(()=>{if(T&&T.qs[T.i]===q)nextQ()},1100);
+    setTimeout(()=>{const go=()=>{if(T&&T.qs[T.i]===q)nextQ()};window.whenQuiet?whenQuiet(go):go()},700);
   }else{T.combo=0;T.hearts--;
     if(q.c){T.miss.set(q.c.id,q.c);speak(q.c.t)}
     const ansTxt=q.ans!=null?(q.opts.find(o=>o.id===q.ans)||{}).m:q.type==="reverse"||q.type==="gap"||q.type==="scene"?q.c&&q.c.t:q.c&&q.c.m;

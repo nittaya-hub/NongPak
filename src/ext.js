@@ -3,15 +3,15 @@
    new games. Loaded after the core script; overrides a few globals.
    ================================================================ */
 let UIL=(()=>{try{return localStorage.getItem("koel-ui")||""}catch(e){return""}})();      // app language chosen by the user
-const TX=(th,en)=>UIL?(UIL==="th"?th:en):(lang==="th"?en:th);  // new screens: Thai, or English for any other app language
+const TX=(th,en)=>{if(!UIL)return lang==="th"?en:th;if(UIL==="th")return th;if(UIL!=="en"&&typeof UI18N!=="undefined"&&UI18N[th]&&UI18N[th][UIL])return UI18N[th][UIL];return en};
 let PIC=null,STK=null;
 if(navigator.standalone)document.body.classList.add("ios-app");
 addEventListener("scroll",()=>{const h=$("#hdr");if(h)h.classList.toggle("scrolled",scrollY>4)},{passive:true});
 
 /* ---------- unlock: keep the extra datasets ---------- */
-tryUnlock=async function(pw){const o=await decryptData(pw);DATA=o.DATA;ALPHA=o.ALPHA;HANZI=o.HANZI;AIDX=o.AIDX;window.CHARINFO=o.CHARINFO||{};PIC=o.PIC||{scenes:[]};STK=o.STK||{};
+tryUnlock=async function(pw){const o=await decryptData(pw);DATA=o.DATA;ALPHA=o.ALPHA;HANZI=o.HANZI;AIDX=o.AIDX;window.CHARINFO=o.CHARINFO||{};PIC=o.PIC||{scenes:[]};STK=o.STK||{};ALPHA_EN=o.ALPHA_EN||{};UI18N=o.UI18N||{};UIRX=null;applyContentLang();
   try{localStorage.setItem(PWK,pw)}catch(e){};const g=$("#gate");if(g)g.remove();document.body.style.overflow="";UNLOCK_PW=pw;render();afterUnlock()};
-let UNLOCK_PW=null;
+let UNLOCK_PW=null,ALPHA_EN={},UI18N={};
 
 /* ---------- shell additions ---------- */
 const _render=render;
@@ -21,7 +21,7 @@ $("#gear").onclick=()=>openSettings();
 /* =================== VOICE (item 3) =================== */
 const VKEY="koel-voice";
 let VS={};try{VS=JSON.parse(localStorage.getItem(VKEY)||"{}")}catch(e){}
-const vset=()=>Object.assign({mode:"app",name:"",rate:1},VS[lang]||{});
+const vset=()=>Object.assign({mode:lang==="th"?"f":"app",name:"",rate:1},VS[lang]||{});
 function saveV(o){VS[lang]=Object.assign(vset(),o);try{localStorage.setItem(VKEY,JSON.stringify(VS))}catch(e){}}
 const FEMALE=/female|woman|หญิง|kanya|narisa|premwadee|achara|pattara|tingting|ting-ting|meijia|mei-jia|sinji|lili|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomo|huihui|yaoyao|anna|petra|helena|katja|hedda|amala|marlene|vicki|samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|aria|jenny|serena|fiona|kate|nicky|emma|michelle|sonia|libby|natasha|amelie|amélie|audrey|marie|aurelie|aurélie|julie|hortense|denise|virginie|celine|céline|eloise|vivienne|brigitte|seraphina|elke|gisela|louisa|maja|sara|siri female|flo\b|grandma|sandy|shelley|kathy|princess|zarvox|mei-jia|sin-ji|yuna|alice|joana|monica|paulina|zuzana/i;
 const MALE=/\bmale\b|\bman\b|ชาย|niwat|li-mu|limu|yunxi|yunyang|yunjian|yunhao|kangkang|markus|yannick|stefan|conrad|killian|kasper|florian|ralf|alex\b|daniel|fred\b|tom\b|aaron|arthur|rishi|oliver|gordon|david|mark\b|guy\b|ryan|christopher|eric\b|brian|andrew|thomas|nicolas|henri|paul\b|claude|remy|rémy|jacques|alain|maurice|jerome|yves|siri male|eddy|reed|rocko|grandpa|ralph|albert|junior|bruce|jacques|bahh|boing|xander|luca|jorge|diego/i;
@@ -36,7 +36,8 @@ function pickVoice(g){const vs=langVoices(),cfg=vset();
   return{v:vs.find(v=>vGender(v)!==(g==="m"?"f":"m"))||vs[0],shift:true};}
 const _speak=speak;
 let lastSay={t:"",at:0};
-speak=function(t,slow){if(!t)return;const now=Date.now();if(t===lastSay.t&&!!slow===lastSay.s&&now-lastSay.at<1200)return;lastSay={t,s:!!slow,at:now};const m=vset().mode;
+speak=function(t,slow){if(!t)return;const now=Date.now();
+  if(lang==="th"&&(vset().mode==="f"||vset().mode==="m")&&voiceMissing()&&AIDX[hk(lang+"|"+t)]!=null){return _speak(t,slow)}if(t===lastSay.t&&!!slow===lastSay.s&&now-lastSay.at<1200)return;lastSay={t,s:!!slow,at:now};const m=vset().mode;
   if(m==="f"||m==="m"||(lang==="fr"&&m==="app"&&!AIDX[hk(lang+"|"+t)]))return genderSpeak(t,slow,m==="app"?"":m);
   return _speak(t,slow)};
 const VNAME={zh:["จีน","Chinese"],de:["เยอรมัน","German"],en:["อังกฤษ","English"],fr:["ฝรั่งเศส","French"],th:["ไทย","Thai"]};
@@ -47,7 +48,7 @@ function warnNoVoice(){if(noVoiceWarned[lang])return;noVoiceWarned[lang]=1;const
 function genderSpeak(t,slow,g){if(voiceMissing())warnNoVoice();
   if(!webTTS){toast("เครื่องนี้ไม่มีเสียงอ่าน");return}
   try{player.pause()}catch(e){}
-  const u=new SpeechSynthesisUtterance(String(t).replace(/……|…|\.\.\./g," "));u.lang=DATA[lang].voice;
+  const u=new SpeechSynthesisUtterance((lang==="th"?thRespell(t):String(t)).replace(/……|…|\.\.\./g," "));u.lang=DATA[lang].voice;
   const{v,shift}=pickVoice(g);if(v)u.voice=v;const rate=vset().rate||1;u.rate=(slow?.6:.95)*rate;
   if(shift){u.pitch=g==="m"?.7:1.25}
   ttsSpeak(u)}
@@ -77,6 +78,7 @@ function openSettings(){
     <button class="gcard" id="s-prof"><span class="gi">${mascot("happy",40)}</span><span><b>${esc(nick()||TX("ผู้เรียน Koel","Koel learner"))}</b><small>${TX("ข้อมูลผู้เรียน ชื่อเล่น และไทม์ไลน์พัฒนาการ ›","Profile, nickname and progress timeline ›")}</small></span></button>
     <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ภาษาของแอป","App language")}</h3><div class="seg2" role="group">${UI_LANGS.map(([k,n])=>`<button type="button" data-ui="${k}" aria-pressed="${(UIL||"th")===k}">${n}</button>`).join("")}</div><p class="hint" style="margin:0">${TX("ใช้กับหน้าวิธีใช้งาน เมนู และหน้าใหม่ ๆ ส่วนคำแปลบทเรียนยังเป็นภาษาไทย","Used for the guide, menus and new screens. Lesson translations stay in Thai.")}</p></div>
     <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ใช้งานออฟไลน์","Offline")} ${navigator.onLine?"":`<span class="chip warn">${TX("ออฟไลน์อยู่","offline now")}</span>`}</h3><div id="s-off" style="display:flex;flex-direction:column;gap:10px"></div></div>
+    ${lang==="th"?"":`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ภาษาของคำแปลและคำอธิบาย","Translations and explanations in")}</h3><div class="seg2" role="group">${[["th","ไทย"],["en","English"]].map(([k,n])=>`<button type="button" data-trl="${k}" aria-pressed="${TRL()===k}">${n}</button>`).join("")}</div><p class="hint" style="margin:0">${TX("คำแปล คำอธิบาย ตัวอย่าง และชื่อหมวดในบทเรียน ตอนนี้มีภาษาไทยและอังกฤษ","Meanings, notes, examples and topic names in lessons. Thai and English are available now.")}</p></div>`}
     <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>${TX("ดูวิธีเริ่มใช้งานอีกครั้ง","Watch the quick guide again")}</b><small>${TX("แนะนำการใช้แอปสั้น ๆ","How to use Koel")}</small></span></button>
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่านภาษา"+DATA[lang].name,"Voice for "+({zh:"Chinese",de:"German",en:"English",fr:"French",th:"Thai"})[lang])}</h3>
@@ -95,7 +97,8 @@ function openSettings(){
   document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;saveV({name:n});document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
     const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)});
   document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{saveV({rate:+b.dataset.rate});document.querySelectorAll("[data-rate]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
-  document.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);openSettings()});
+  document.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);applyContentLang();render();openSettings()});
+  document.querySelectorAll("[data-trl]").forEach(b=>b.onclick=()=>{setTRL(b.dataset.trl);openSettings()});
   $("#s-test").onclick=()=>{const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)};
   const so=$("#s-out");if(so)so.onclick=async()=>{await AUTH.sb.auth.signOut();try{localStorage.removeItem(PWK)}catch(e){};location.reload()};
   const si=$("#s-in");if(si)si.onclick=()=>{closeSheet();showAuth()};
@@ -243,7 +246,7 @@ function mixedPool(){const l=shuffle(learnedCards().filter(c=>c.m)).slice(0,10);
 /* =================== GAMES (items 8-11) =================== */
 const PW=it=>({zh:it.zh,de:it.de,en:it.en,fr:it.fr,th:it.th})[lang];
 const PR=it=>lang==="zh"?it.zhr:lang==="th"?it.thr:"";
-const PM=it=>lang==="th"?it.en:it.th;
+const PM=it=>(lang==="th"||TRL()!=="th")?it.en:it.th;
 const scenesFor=g=>(PIC.scenes||[]).filter(s=>s.topics.includes(g));
 function gameShell(title,body,foot){const el=$("#study");el.hidden=false;document.body.style.overflow="hidden";
   el.innerHTML=`<div class="top"><button class="x" id="gx" aria-label="ออก">×</button><div style="flex:1;font-weight:800;min-width:0">${esc(title)}</div><span class="combo" id="gscore"></span>${musicBtn()}</div><div class="stage" id="stage">${body}</div>${foot?`<div class="foot" id="gfoot">${foot}</div>`:""}`;
@@ -327,7 +330,7 @@ function drawFlash(state){const c=FC.cs[FC.i];if(!c)return endFlash();
   const ff=$("#fflip");if(ff)ff.onclick=()=>$("#fc").classList.toggle("flip");
   const fr=$("#frev");if(fr)fr.onclick=()=>{FC.miss.push(c);drawFlash("rev")};
   document.querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>{FC.pick=+b.dataset.fo;const ok=FC.opts[FC.pick].id===c.id;if(ok){FC.score+=10;FC.right++;sfx("ok")}else{FC.miss.push(c);sfx("bad")}drawFlash("ans")});
-  const fn=$("#fnext");if(fn)fn.onclick=()=>{FC.i++;drawFlash()};
+  const fn=$("#fnext");if(fn)fn.onclick=()=>{fn.disabled=true;whenQuiet(()=>{FC.i++;drawFlash()},4000)};
   if(!state)speak(c.t)}
 function endFlash(){const pct=Math.round(FC.right/FC.cs.length*100),miss=FC.miss;
   endScreen(TX("แฟลชการ์ด","Flashcards"),pct,`<p class="hint">${TX(`ถูก ${FC.right} จาก ${FC.cs.length} ใบ`,`${FC.right} of ${FC.cs.length} right`)}</p>`,()=>startFlash(FC.g),
@@ -441,7 +444,7 @@ function drawFO(){const F=FO,t=F.targets[F.ti],sc=F.sc,rot=8+F.lvl*3;
   $("#fo-say").onclick=speakTarget;
   $("#fo-rev").onclick=()=>{const i=F.all.indexOf(t);const b=document.querySelector(`[data-fi="${i}"]`);if(b){b.style.outline="4px solid var(--hard)";b.style.borderRadius="12px"}F.hearts=Math.max(0,F.hearts-1);setTimeout(()=>{if(FO!==F)return;F.found.push(t);nextFO()},1200)};
   document.querySelectorAll("[data-fi]").forEach(b=>b.onclick=()=>{const it=F.all[+b.dataset.fi];
-    if(it===t){b.classList.add("hit");sfx("ok");gfb(true,TX("ถูกต้อง! ","Correct! ")+it.e+" = "+esc(PW(it))+" · "+esc(PM(it)),b);speak(PW(it));F.found.push(it);setTimeout(()=>{if(FO===F)nextFO()},550)}
+    if(it===t){b.classList.add("hit");sfx("ok");gfb(true,TX("ถูกต้อง! ","Correct! ")+it.e+" = "+esc(PW(it))+" · "+esc(PM(it)),b);speak(PW(it));F.found.push(it);setTimeout(()=>whenQuiet(()=>{if(FO===F)nextFO()}),300)}
     else{F.hearts--;F.miss++;F.tries++;sfx("bad");b.classList.add("miss");gfb(false,TX("ยังไม่ใช่ นั่นคือ ","Not that one: it's ")+it.e+" "+esc(PW(it))+" · "+TX("เหลือหัวใจ ","hearts left ")+Math.max(0,F.hearts),b);speak(PW(it));setTimeout(()=>b.classList.remove("miss"),600);const hs=$("#gscore");if(hs)hs.textContent="♥".repeat(Math.max(0,F.hearts))+"♡".repeat(3-Math.max(0,F.hearts));if(F.hearts<=0)setTimeout(()=>{if(FO===F)endFO()},500);else if(F.mode==="audio"&&F.tries===2)drawFO()}})}
 function nextFO(){FO.ti++;FO.tries=0;if(FO.ti>=FO.targets.length||FO.hearts<=0)return endFO();drawFO();speakTarget()}
 function endFO(){clearInterval(GT);const F=FO,ok=F.hearts>0,stars=ok?F.hearts:0;sfx(ok?"win":"bad");
@@ -552,7 +555,7 @@ async function openAdmin(){if(AUTH.role!=="admin")return;
   if(error){$("#stage").innerHTML=`<p class="tip">โหลดข้อมูลไม่ได้: ${esc(error.message)} · ตรวจว่ารัน supabase/schema.sql แล้ว</p>`;return}
   const last=Object.fromEntries((pr||[]).map(r=>[r.user_id,r.updated_at])),wk=Date.now()-7*DAY;
   const act=ps.filter(p=>new Date(last[p.id]||p.last_seen||0)>wk).length,nw=ps.filter(p=>new Date(p.created_at)>wk).length;
-  const d=t=>t?new Date(t).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"}):"–";
+  const d=t=>t?new Date(t).toLocaleDateString(LOC(),{day:"numeric",month:"short",year:"2-digit"}):"–";
   $("#stage").innerHTML=`<div class="kpis"><div class="st"><b>${ps.length}</b><small>ผู้ใช้ทั้งหมด</small></div><div class="st"><b>${act}</b><small>ใช้งาน 7 วันล่าสุด</small></div><div class="st"><b>${nw}</b><small>สมัครใหม่ 7 วัน</small></div><div class="st"><b>${ps.filter(p=>p.role==="admin").length}</b><small>แอดมิน</small></div></div>
    <div class="row-flex" style="justify-content:space-between;flex-wrap:wrap"><h2>ผู้ใช้งาน</h2><input id="ad-q" placeholder="ค้นหาอีเมลหรือชื่อ" style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;min-width:0"></div>
    <div class="panel tablewrap" style="padding:6px 10px"><table class="atable"><thead><tr><th>อีเมล / ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>สมัคร</th><th>เรียนล่าสุด</th></tr></thead><tbody>
@@ -568,7 +571,8 @@ async function openAdmin(){if(AUTH.role!=="admin")return;
 
 
 /* =================== LEARNER PROFILE: nickname, stats, timeline =================== */
-const LCOL={zh:"#cf3b2a",de:"#c08a12",en:"#2463c9",fr:"#7a3fb8",th:"#16846b"},LTH={zh:"จีน",de:"เยอรมัน",en:"อังกฤษ",fr:"ฝรั่งเศส",th:"ไทย"};
+const LCOL={zh:"#cf3b2a",de:"#c08a12",en:"#2463c9",fr:"#7a3fb8",th:"#16846b"},LNAMES={th:{zh:"จีน",de:"เยอรมัน",en:"อังกฤษ",fr:"ฝรั่งเศส",th:"ไทย"},en:{zh:"Chinese",de:"German",en:"English",fr:"French",th:"Thai"},zh:{zh:"中文",de:"德语",en:"英语",fr:"法语",th:"泰语"},de:{zh:"Chinesisch",de:"Deutsch",en:"Englisch",fr:"Französisch",th:"Thai"},fr:{zh:"chinois",de:"allemand",en:"anglais",fr:"français",th:"thaï"}};
+const LTH=new Proxy({},{get:(_,k)=>(LNAMES[UIL||"th"]||LNAMES.th)[k]});
 function nick(){if(AUTH.nick!=null)return AUTH.nick;try{return localStorage.getItem("koel-nick")||""}catch(e){return""}}
 function langStats(l){const s=store[l]||{},cards=Object.values(s.cards||{}),log=s.log||{},tests=s.tests||[];
   const dk=dayKey(Date.now()),yk=dayKey(Date.now()-DAY),streak=(s.lastDay===dk||s.lastDay===yk)?s.streak||0:0;
@@ -582,7 +586,7 @@ async function openProfile(){
   const days=[...Array(30)].map((_,i)=>{const t=Date.now()-(29-i)*DAY;return{k:dayKey(t),d:new Date(t)}});
   const vals=days.map(d=>LANGS.map(l=>per[l].log[d.k]||0)),mx=Math.max(20,...vals.map(v=>v.reduce((a,b)=>a+b,0)));
   const W=600,H=170,bw=W/30;
-  const chart=`<svg viewBox="0 0 ${W} ${H+22}" style="width:100%;height:auto" role="img" aria-label="XP รายวัน 30 วันล่าสุด">${days.map((d,i)=>{let y=H;return LANGS.map((l,j)=>{const h=vals[i][j]/mx*(H-8);if(!h)return"";y-=h;return`<rect x="${i*bw+2}" y="${y}" width="${bw-4}" height="${h}" rx="3" fill="${LCOL[l]}"><title>${d.d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})} · ${LTH[l]} ${vals[i][j]} XP</title></rect>`}).join("")+(i%7===1||i===29?`<text x="${i*bw+bw/2}" y="${H+16}" font-size="11" text-anchor="middle" fill="#6b6862">${d.d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})}</text>`:"")}).join("")}<line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#e6e3dc"/></svg>`;
+  const chart=`<svg viewBox="0 0 ${W} ${H+22}" style="width:100%;height:auto" role="img" aria-label="XP รายวัน 30 วันล่าสุด">${days.map((d,i)=>{let y=H;return LANGS.map((l,j)=>{const h=vals[i][j]/mx*(H-8);if(!h)return"";y-=h;return`<rect x="${i*bw+2}" y="${y}" width="${bw-4}" height="${h}" rx="3" fill="${LCOL[l]}"><title>${d.d.toLocaleDateString(LOC(),{day:"numeric",month:"short"})} · ${LTH[l]} ${vals[i][j]} XP</title></rect>`}).join("")+(i%7===1||i===29?`<text x="${i*bw+bw/2}" y="${H+16}" font-size="11" text-anchor="middle" fill="#6b6862">${d.d.toLocaleDateString(LOC(),{day:"numeric",month:"short"})}</text>`:"")}).join("")}<line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#e6e3dc"/></svg>`;
   /* timeline events */
   const ev=[];
   for(const l of LANGS){const p=per[l];
@@ -593,10 +597,10 @@ async function openProfile(){
     for(const m of [10,50,100,250,500,1000])if(p.learned>=m)ev.push({t:null,ic:"⭐",l,txt:`เรียนครบ ${m} ประโยค/คำในภาษา${LTH[l]}`,ms:m});}
   const dated=ev.filter(e=>e.t).sort((a,b)=>b.t-a.t).slice(0,40),miles=ev.filter(e=>!e.t).sort((a,b)=>b.ms-a.ms);
   let lastDay="";
-  const tl=dated.map(e=>{const d=new Date(e.t).toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"short",year:"2-digit"}),head=d!==lastDay?`<div class="sec">${d}</div>`:"";lastDay=d;
+  const tl=dated.map(e=>{const d=new Date(e.t).toLocaleDateString(LOC(),{weekday:"short",day:"numeric",month:"short",year:"2-digit"}),head=d!==lastDay?`<div class="sec">${d}</div>`:"";lastDay=d;
     return head+`<div class="tl-row"><span class="tl-ic" style="background:color-mix(in srgb,${LCOL[e.l]} 14%,#fff)">${e.ic}</span><span style="flex:1;min-width:0">${esc(e.txt)}<small style="display:block;color:${LCOL[e.l]};font-weight:700">${LTH[e.l]}</small></span>${e.chip?`<span class="chip ${parseInt(e.chip)>=75?"ok":"warn"}">${e.chip}</span>`:""}</div>`}).join("");
   $("#stage").innerHTML=`
-   <div class="panel" style="display:flex;flex-direction:column;gap:12px"><div class="row-flex">${mascot("happy",72)}<div style="min-width:0"><h2 style="font-size:22px">${esc(nick()||"ผู้เรียน Koel")}</h2><p class="hint" style="margin:0">${AUTH.user?esc(AUTH.user.email||""):"ยังไม่ได้ล็อกอิน (เก็บในเครื่องนี้)"}${AUTH.user&&AUTH.user.created_at?" · เริ่มใช้ "+new Date(AUTH.user.created_at).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}):""}</p></div></div>
+   <div class="panel" style="display:flex;flex-direction:column;gap:12px"><div class="row-flex">${mascot("happy",72)}<div style="min-width:0"><h2 style="font-size:22px">${esc(nick()||"ผู้เรียน Koel")}</h2><p class="hint" style="margin:0">${AUTH.user?esc(AUTH.user.email||""):"ยังไม่ได้ล็อกอิน (เก็บในเครื่องนี้)"}${AUTH.user&&AUTH.user.created_at?" · เริ่มใช้ "+new Date(AUTH.user.created_at).toLocaleDateString(LOC(),{day:"numeric",month:"short",year:"numeric"}):""}</p></div></div>
      <form class="row-flex" id="nk-f" style="gap:8px"><label class="field" style="flex:1;margin:0">ชื่อเล่น<input id="nk" maxlength="30" value="${esc(nick())}" placeholder="เช่น นก"></label><button class="primary" style="width:auto;align-self:flex-end;padding:11px 18px">บันทึก</button></form></div>
    <div class="kpis"><div class="st"><b class="flame">${best}</b><small>วันติดต่อกันสูงสุดตอนนี้</small></div><div class="st"><b>${tot.days.size}</b><small>วันที่เรียน</small></div><div class="st"><b>${tot.learned}</b><small>ประโยค/คำที่เรียนแล้ว</small></div><div class="st"><b>${tot.known}</b><small>จำได้แม่น</small></div><div class="st"><b>${tot.xp}</b><small>XP สะสม</small></div><div class="st"><b>${tot.tests}</b><small>ครั้งที่เล่นเกม/สอบ</small></div></div>
    <div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>พัฒนาการ 30 วันล่าสุด</h2>${chart}<div class="row-flex" style="flex-wrap:wrap;gap:10px">${LANGS.map(l=>`<span class="hint"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${LCOL[l]};margin-right:4px"></i>${LTH[l]}</span>`).join("")}</div></div>
@@ -686,7 +690,7 @@ function showOnboarding(){if($("#onb"))return;
     const n=$("#onb-next");if(n)n.onclick=()=>{i++;draw()};
     $("#onb-back").onclick=()=>{if(i){i--;draw()}};
     const sk=$("#onb-skip");if(sk)sk.onclick=()=>{i=SL.length-1;draw()};
-    el.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);i=1;draw()});
+    el.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);try{localStorage.removeItem("koel-trl")}catch(e){}applyContentLang();i=1;draw()});
     el.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>finish(b.dataset.l))};
   draw()}
 function maybeOnboard(){if(DATA&&needOnboarding())showOnboarding()}
@@ -706,6 +710,53 @@ setInterval(()=>{if(AUTH.user&&idleTooLong())idleLogout()},60000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&AUTH.user&&idleTooLong())idleLogout()});
 
 
+
+/* =================== TRANSLATION LANGUAGE + WHOLE-APP INTERFACE LANGUAGE =================== */
+const LOC=()=>({th:"th-TH",en:"en-GB",zh:"zh-CN",de:"de-DE",fr:"fr-FR"})[UIL||"th"]||"th-TH";window.LOC=LOC;
+const TRL=()=>{let v="";try{v=localStorage.getItem("koel-trl")||""}catch(e){}return v||(UIL&&UIL!=="th"?"en":"th")};
+function setTRL(v){try{localStorage.setItem("koel-trl",v)}catch(e){}applyContentLang();render()}
+function applyContentLang(){if(!DATA)return;const en=TRL()==="en";
+  for(const L of ["zh","de","en","fr"]){const d=DATA[L];if(!d)continue;
+    if(!d._topics_th)d._topics_th=Object.assign({},d.topics);
+    d.topics=en&&d.topics_en?Object.assign({},d._topics_th,d.topics_en):Object.assign({},d._topics_th);
+    for(const c of d.cards){if(!c._th)c._th={m:c.m,n:c.n,exm:c.exm,p:c.p};
+      if(en&&c.en){c.m=c.en.m||c._th.m;c.n=c.en.n;c.exm=c.en.exm;c.p=""}else Object.assign(c,c._th)}
+    if(!ALPHA["_th_"+L])ALPHA["_th_"+L]=ALPHA[L];
+    ALPHA[L]=en&&ALPHA_EN[L]?ALPHA_EN[L]:ALPHA["_th_"+L]}
+  const CI=window.CHARINFO||{};for(const k in CI){const v=CI[k];if(!v._th)v._th={p:v.p,m:v.m};if(en){v.p="";v.m=""}else{v.p=v._th.p;v.m=v._th.m}}}
+/* interface text: translate what the core screens print in Thai, for any app language other than Thai */
+let UIRX=null;
+function uiTr(t){if(!UIL||UIL==="th")return null;const k=t.replace(/\s+/g," ").trim();if(!k||!/[฀-๿]/.test(k))return null;
+  const hit=UI18N[k];if(hit)return hit[UIL]||hit.en;
+  const pm=k.match(/^อ่านว่า\s+(.+)$/);if(pm&&!/[\u0E00-\u0E7F]/.test(pm[1])&&UI18N["อ่านว่า"])return(UI18N["อ่านว่า"][UIL]||"Read")+" "+pm[1];
+  if(!UIRX){UIRX=Object.keys(UI18N).filter(x=>x.includes("{n}")).map(x=>[new RegExp("^"+x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\\\{n\\\}/g,"(\\d[\\d,.]*)")+"$"),x])}
+  for(const[rx,x]of UIRX){const m=k.match(rx);if(m){let i=1;return(UI18N[x][UIL]||UI18N[x].en).replace(/\{n\}/g,()=>m[i++])}}return null}
+const UI_SKIP=".han,[data-say],.big,.word-now,.ws,.chain,.glyph,.acell b,.onb-langs b,.exw b,.item .t,.gapline,.mean.han,.fo-ask b,.jp.word .lab,.wlist";
+function uiTranslate(root){if(!UIL||UIL==="th"||!root)return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;const todo=[];
+  while(n=w.nextNode()){const pe=n.parentElement;if(!pe||pe.closest("script,style")||pe.closest(UI_SKIP))continue;if(lang==="th"&&pe.closest(".item,.reveal,.opt,.exbox,.msg"))continue;const r=uiTr(n.textContent);if(r!=null)todo.push([n,r])}
+  for(const[n,r]of todo){const lead=n.textContent.match(/^\s*/)[0],tail=n.textContent.match(/\s*$/)[0];n.textContent=lead+r+tail}
+  (root.querySelectorAll?root:document).querySelectorAll("[placeholder],[aria-label],[title]").forEach(e=>{for(const a of["placeholder","aria-label","title"]){const v=e.getAttribute(a);if(v){const r=uiTr(v);if(r!=null)e.setAttribute(a,r)}}})}
+let uiPend=false;
+new MutationObserver(()=>{if(uiPend||!UIL||UIL==="th")return;uiPend=true;requestAnimationFrame(()=>{uiPend=false;uiTranslate(document.body)})}).observe(document.documentElement,{childList:true,subtree:true,characterData:false});
+const _toast=toast;toast=function(m){const r=uiTr(String(m));return _toast(r!=null?r:m)};
+
+/* =================== THAI: one female voice, correct readings =================== */
+const TH_READ={"สลัด":"สะลัด","สระ":"สะระ"};
+function thRespell(t){let s=String(t);for(const k in TH_READ)s=s.split(k).join(TH_READ[k]);return s}
+
+
+/* =================== WAIT FOR SPEECH BEFORE MOVING ON =================== */
+let SPK_END=0;
+player.addEventListener("play",()=>{SPK_END=Date.now()+15000});
+["ended","pause","error"].forEach(ev=>player.addEventListener(ev,()=>{SPK_END=Date.now()}));
+function speakingNow(){return(!player.paused&&!player.ended)||(webTTS&&(speechSynthesis.speaking||speechSynthesis.pending))}
+function whenQuiet(fn,max){const t0=Date.now(),lim=max||7000;let seen=false;
+  const chk=()=>{const busy=speakingNow();if(busy)seen=true;
+    if((!busy&&(seen||Date.now()-t0>350))||Date.now()-t0>lim){setTimeout(fn,seen?250:0);return}setTimeout(chk,80)};chk()}
+
+const _nextStudy=next;next=function(){whenQuiet(()=>_nextStudy(),4000)};
+const _nextQ=nextQ;nextQ=function(){if(T&&T.i<0)return _nextQ();whenQuiet(()=>_nextQ(),4000)};
 /* =================== OFFLINE =================== */
 addEventListener("offline",()=>toast(TX("ออฟไลน์อยู่ ยังเรียนต่อได้ ความคืบหน้าจะซิงก์เมื่อกลับมาออนไลน์","You're offline. Keep learning: progress syncs when you're back online.")));
 addEventListener("online",()=>{toast(TX("กลับมาออนไลน์แล้ว กำลังซิงก์","Back online, syncing"));if(dbDoc){pending=true;push()}});
