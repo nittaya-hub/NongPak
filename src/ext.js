@@ -61,7 +61,10 @@ function packSpeak(t,slow,id){const tok=++packTok,url="v/"+id+"/"+hk(id.slice(0,
 let packBusy=false;
 const _speak=speak;
 let lastSay={t:"",at:0};
-function fallbackSpeak(t,slow){const cfg=vset();const m=cfg.mode==="pack"?(cfg.pv||"f1")[0]:cfg.mode;
+function fallbackSpeak(t,slow){const cfg=vset();
+  /* in-app voice chosen but this phrase has no file yet: use the bundled recording (plays reliably on phones), else the device voice */
+  if(cfg.mode==="pack"&&AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow);
+  const m=cfg.mode==="pack"?(cfg.pv||"f1")[0]:cfg.mode;
   if(lang==="th"&&(m==="f"||m==="m")&&voiceMissing()&&AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow);
   if(m==="f"||m==="m"||(lang==="fr"&&m==="app"&&!AIDX[hk(lang+"|"+t)]))return genderSpeak(t,slow,m==="app"?"":m);
   return _speak(t,slow)}
