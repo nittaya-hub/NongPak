@@ -55,7 +55,8 @@ create trigger on_auth_user_created after insert on auth.users
 create or replace function public.guard_profile() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if not public.is_admin() and (new.role is distinct from old.role or new.status is distinct from old.status) then
+  -- auth.uid() is null in the SQL Editor / service role: allow the project owner to set roles there
+  if auth.uid() is not null and not public.is_admin() and (new.role is distinct from old.role or new.status is distinct from old.status) then
     raise exception 'only admins can change role or status';
   end if;
   return new;
