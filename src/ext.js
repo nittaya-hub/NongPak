@@ -56,6 +56,8 @@ function genderSpeak(t,slow,g){if(voiceMissing())warnNoVoice();
   const{v,shift}=pickVoice(g);if(v)u.voice=v;const rate=vset().rate||1;u.rate=(slow?.6:.95)*rate;
   /* no fake pitch shift: it made the "male" voice sound broken and unclear */
   ttsSpeak(u)}
+/* the core fallback voice also follows the female/male setting (it used to ignore it and shift the pitch) */
+webSpeak=function(t,slow){const m=vset().mode;genderSpeak(t,slow,m==="f"||m==="m"?m:"")};
 
 
 /* =================== RELIABLE SPEECH =================== */
@@ -287,7 +289,7 @@ function gfb(ok,msg,at){const st=$("#stage")||$("#study");if(!st)return;let b=$(
   b.className="gfb "+(ok?"ok":"bad");b.innerHTML=`${mascot(ok?"happy":"oops",44)}<b>${ok?"✓":"✗"}</b><span>${msg}</span>`;b.hidden=false;clearTimeout(b._t);b._t=setTimeout(()=>{b.hidden=true},1700);
   if(at){const r=at.getBoundingClientRect(),m=document.createElement("span");m.className="gmark "+(ok?"ok":"bad");m.textContent=ok?"✓":"✗";m.style.left=(r.left+r.width/2)+"px";m.style.top=(r.top+r.height/2)+"px";document.body.appendChild(m);setTimeout(()=>m.remove(),900)}}
 /* the classic games get the same sounds */
-const _resolveQ=resolveQ;resolveQ=function(ok,timeout){if(T&&T.qs[T.i]&&!T.qs[T.i].done)sfx(ok?"ok":"bad");return _resolveQ(ok,timeout)};
+const _resolveQ=resolveQ;resolveQ=function(ok,timeout){const q0=T&&T.qs[T.i];if(q0&&!q0.t0){q0.t0=Date.now();q0.secs=q0.secs||20}if(q0&&!q0.done)sfx(ok?"ok":"bad");return _resolveQ(ok,timeout)};
 document.addEventListener("click",e=>{const b=e.target.closest("#study button,#onb button");if(b&&!b.closest("[data-fi],[data-fo],[data-i],[data-j],#ws,[data-ci]"))sfx("tap")},true);
 
 
@@ -764,10 +766,16 @@ function whenQuiet(fn,max){const t0=Date.now(),lim=max||7000;let seen=false;
 
 /* one move per tap: a second tap (or the auto-advance) while waiting for the voice must not skip a card/question */
 let nPend=false;const _nextStudy=next;next=function(){if(nPend)return;nPend=true;whenQuiet(()=>{nPend=false;_nextStudy()},4000)};
-/* no countdown: a question never answers itself; the learner always taps an answer first */
-const noTimer=()=>{if(T)clearTimeout(T.timer)};
-let qPend=false;const _nextQ=nextQ;nextQ=function(){if(!T)return;if(T.i<0){_nextQ();noTimer();return}if(qPend)return;qPend=true;const i=T.i;
-  whenQuiet(()=>{qPend=false;if(T&&T.i===i){_nextQ();noTimer()}},4000)};
+/* timer per question: starts only after the question's audio has finished; when time is up the answer
+   is shown and the game waits for the learner to tap "next" (it never moves on by itself) */
+function qBar(q){const bar=$("#tbar");if(!bar||!q.t0||q.done)return;const left=Math.max(0,q.secs-(Date.now()-q.t0)/1000);
+  bar.style.transition="none";bar.style.width=(left/q.secs*100)+"%";requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition="width "+left+"s linear";bar.style.width="0%"}))}
+function qTimer(){if(!T)return;clearTimeout(T.timer);const q=T.qs[T.i];if(!q)return;q.t0=0;const bar=$("#tbar");if(bar){bar.style.transition="none";bar.style.width="100%"}
+  whenQuiet(()=>{if(!T||T.qs[T.i]!==q||q.done)return;q.secs=q.type==="match"?40:20;q.t0=Date.now();qBar(q);
+    T.timer=setTimeout(()=>{if(T&&T.qs[T.i]===q&&!q.done)resolveQ(false,true)},q.secs*1000)},6000)}
+const _drawQ=drawQ;drawQ=function(fb){_drawQ(fb);if(T&&T.qs[T.i])qBar(T.qs[T.i])};
+let qPend=false;const _nextQ=nextQ;nextQ=function(){if(!T)return;if(T.i<0){_nextQ();qTimer();return}if(qPend)return;qPend=true;const i=T.i;
+  whenQuiet(()=>{qPend=false;if(T&&T.i===i){_nextQ();qTimer()}},4000)};
 /* =================== OFFLINE =================== */
 addEventListener("offline",()=>toast(TX("ออฟไลน์อยู่ ยังเรียนต่อได้ ความคืบหน้าจะซิงก์เมื่อกลับมาออนไลน์","You're offline. Keep learning: progress syncs when you're back online.")));
 addEventListener("online",()=>{toast(TX("กลับมาออนไลน์แล้ว กำลังซิงก์","Back online, syncing"));if(dbDoc){pending=true;push()}});
