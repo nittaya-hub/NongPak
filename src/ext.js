@@ -810,3 +810,47 @@ async function offPanel(){const box=$("#s-off");if(!box)return;
     return signedIn()}
   showAuth();
 })();
+
+/* =================== LEARNING DASHBOARD: where am I, what to review =================== */
+function dashStats(l){const prev=lang;lang=l;try{
+  const all=deck(),seen=all.filter(c=>st(c.id)),known=all.filter(c=>(st(c.id)||{}).k||(st(c.id)||{}).b>=2),d=due(),w=weak();
+  const tp=topics(),tps=Object.keys(tp).filter(g=>g!=="mine").map(g=>Object.assign({g,name:tp[g]},topicStats(g))).filter(t=>t.n);
+  return{n:all.length,seen:seen.length,known:known.length,due:d,weak:w,tps,streak:streakNow(),tests:(S().tests||[]).slice(-5).reverse()}}finally{lang=prev}}
+function openDash(){
+  const L=lang,ds=dashStats(L),pc=x=>ds.n?Math.round(x/ds.n*100):0,LN=VNAME[L]||["",""];
+  const meaning=c=>(TRL&&TRL()==="en"&&c.en&&c.en.m)||c.m||"";
+  const row=(c,side)=>`<div class="item dash-it"><div class="t han">${esc(c.t)}</div><div class="m">${esc(meaning(c))}</div><div class="side">${side}<button class="iconbtn" data-say="${esc(c.t)}" aria-label="ฟัง" style="width:34px;height:34px">${ICON_PLAY}</button></div></div>`;
+  const ago=t=>{const d=Math.floor((Date.now()-t)/DAY);return d<1?TX("วันนี้","today"):TX(d+" วันแล้ว",d+" days ago")};
+  const others=LANGS.filter(l=>l!==L&&DATA[l]).map(l=>{const o=dashStats(l);return{l,o}}).filter(x=>x.o.seen);
+  const tps=ds.tps.slice().sort((a,b)=>(b.seen>0)-(a.seen>0)||b.seen/b.n-a.seen/a.n);
+  const el=overlay(TX("แดชบอร์ดการเรียน","Learning dashboard"),`
+   <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+    <div class="row-flex" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${TX("ภาษา"+LN[0],LN[1])}</h2><span class="chip">🔥 ${TX(ds.streak+" วันติด",ds.streak+"-day streak")}</span></div>
+    <div class="dash-bar" role="img" aria-label="${pc(ds.seen)}%"><i class="k" style="width:${pc(ds.known)}%"></i><i class="s" style="width:${Math.max(0,pc(ds.seen)-pc(ds.known))}%"></i></div>
+    <div class="dash-kpi">
+     <div><b>${ds.seen}<small>/${ds.n}</small></b><span>${TX("เรียนไปแล้ว","learned")} · ${pc(ds.seen)}%</span></div>
+     <div><b>${ds.known}</b><span>${TX("จำได้ดีแล้ว","know well")}</span></div>
+     <div class="${ds.due.length?"hot":""}"><b>${ds.due.length}</b><span>${TX("ต้องทบทวนตอนนี้","due for review")}</span></div>
+     <div class="${ds.weak.length?"warn":""}"><b>${ds.weak.length}</b><span>${TX("พลาดบ่อย","often missed")}</span></div>
+    </div>
+    <div class="dash-act"><button class="primary" id="d-rev" ${ds.due.length?"":"disabled"}>${ds.due.length?TX("ทบทวนตอนนี้ ("+ds.due.length+")","Review now ("+ds.due.length+")"):TX("ไม่มีคำค้างทบทวน เยี่ยม!","Nothing due. Nice!")}</button>
+     <button class="ghost" id="d-weak" ${ds.weak.length?"":"disabled"}>${TX("ฝึกคำที่พลาดบ่อย","Practice missed words")}</button></div>
+   </div>
+   ${ds.due.length?`<div class="panel"><h3>${TX("ต้องทบทวน","Due for review")}</h3><div class="list">${ds.due.slice(0,20).map(c=>row(c,`<small class="chip hot">${ago(st(c.id).d)}</small>`)).join("")}</div>${ds.due.length>20?`<p class="hint">${TX("และอีก "+(ds.due.length-20)+" คำ","and "+(ds.due.length-20)+" more")}</p>`:""}</div>`:""}
+   ${ds.weak.length?`<div class="panel"><h3>${TX("คำที่พลาดบ่อย","Words you often miss")}</h3><div class="list">${ds.weak.map(c=>row(c,`<small class="chip warn">${TX("พลาด "+st(c.id).l+" ครั้ง","missed "+st(c.id).l+"×")}</small>`)).join("")}</div></div>`:""}
+   <div class="panel"><h3>${TX("ความคืบหน้าแต่ละหมวด","Progress by topic")}</h3><p class="hint" style="margin:0 0 6px">${TX("แตะหมวดเพื่อฝึกหมวดนั้น · สีเข้ม = จำได้ดี สีอ่อน = เรียนแล้ว","Tap a topic to practise it · dark = know well, light = learned")}</p>
+    <div class="dash-tp">${tps.map(t=>`<button class="dash-t" data-dt="${esc(t.g)}"><span class="nm">${esc(t.name)}</span><span class="dash-bar sm"><i class="k" style="width:${t.known/t.n*100}%"></i><i class="s" style="width:${(t.seen-t.known)/t.n*100}%"></i></span><span class="ct">${t.seen}/${t.n}</span></button>`).join("")}</div></div>
+   ${ds.tests.length?`<div class="panel"><h3>${TX("ผลทดสอบล่าสุด","Recent tests")}</h3><div class="list">${ds.tests.map(t=>`<div class="item" style="grid-template-columns:1fr auto"><div class="m" style="font-weight:600">${esc(t.title)}</div><div class="side"><span class="chip ${t.pct>=75?"ok":"warn"}">${t.pct}%</span></div><div class="m hint" style="font-size:12.5px">${new Date(t.d).toLocaleDateString(LOC(),{day:"numeric",month:"short"})}</div></div>`).join("")}</div></div>`:""}
+   ${others.length?`<div class="panel"><h3>${TX("ภาษาอื่นที่เรียนอยู่","Your other languages")}</h3><div class="dash-tp">${others.map(({l,o})=>`<button class="dash-t" data-dl="${l}"><span class="nm">${TX("ภาษา"+VNAME[l][0],VNAME[l][1])}</span><span class="dash-bar sm"><i class="k" style="width:${o.known/o.n*100}%"></i><i class="s" style="width:${(o.seen-o.known)/o.n*100}%"></i></span><span class="ct">${o.due.length?`<b style="color:var(--again)">${TX("ทวน "+o.due.length,o.due.length+" due")}</b>`:o.seen+"/"+o.n}</span></button>`).join("")}</div></div>`:""}`);
+  const go=cards=>{if(!cards.length)return;closeStudy();startSession(cards)};
+  const r=$("#d-rev");if(r)r.onclick=()=>go(dashStats(L).due.slice(0,60));
+  const w=$("#d-weak");if(w)w.onclick=()=>go(weak());
+  el.querySelectorAll("[data-dt]").forEach(b=>b.onclick=()=>{const cs=topicCards(b.dataset.dt),seen=cs.filter(c=>st(c.id));go(seen.length?seen:cs.slice(0,10))});
+  el.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>{lang=b.dataset.dl;try{localStorage.setItem(LS+"-lang",lang)}catch(e){};document.body.dataset.lang=lang;render();openDash()});
+  el.querySelectorAll("[data-say]").forEach(b=>b.onclick=e=>{e.stopPropagation();speak(b.dataset.say)});
+}
+/* entry points: a card on the Today tab and in Settings */
+const _renderD=render;render=function(){_renderD();if(tab==="today"&&DATA&&$("#view")&&!$("#d-open")&&S().goal){
+  const ds=dashStats(lang);const b=document.createElement("button");b.className="gcard";b.id="d-open";
+  b.innerHTML=`<span class="gi">📊</span><span><b>${TX("แดชบอร์ดการเรียน","Learning dashboard")}</b><small>${TX(`เรียนแล้ว ${ds.seen}/${ds.n} · ต้องทบทวน ${ds.due.length} · พลาดบ่อย ${ds.weak.length} ›`,`Learned ${ds.seen}/${ds.n} · ${ds.due.length} due · ${ds.weak.length} often missed ›`)}</small></span>`;
+  b.onclick=openDash;$("#view").prepend(b)}};
