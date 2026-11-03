@@ -290,3 +290,6 @@ nav.tabs{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:non
 @keyframes pk-ponder{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-6deg) translateY(-4px)}}
 /* even with "reduce motion" on, the mascot keeps a gentle bob (small, slow, no flashing) */
 @media (prefers-reduced-motion:reduce){.pk .all,.pk.idle .all{animation:pk-bob 3s ease-in-out infinite!important}}
+
+/* quiz: no countdown bar (questions wait for an answer) */
+#study #tbar{display:none}

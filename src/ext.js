@@ -758,8 +758,12 @@ function whenQuiet(fn,max){const t0=Date.now(),lim=max||7000;let seen=false;
   const chk=()=>{const busy=speakingNow();if(busy)seen=true;
     if((!busy&&(seen||Date.now()-t0>350))||Date.now()-t0>lim){setTimeout(fn,seen?250:0);return}setTimeout(chk,80)};chk()}
 
-const _nextStudy=next;next=function(){whenQuiet(()=>_nextStudy(),4000)};
-const _nextQ=nextQ;nextQ=function(){if(T&&T.i<0)return _nextQ();whenQuiet(()=>_nextQ(),4000)};
+/* one move per tap: a second tap (or the auto-advance) while waiting for the voice must not skip a card/question */
+let nPend=false;const _nextStudy=next;next=function(){if(nPend)return;nPend=true;whenQuiet(()=>{nPend=false;_nextStudy()},4000)};
+/* no countdown: a question never answers itself; the learner always taps an answer first */
+const noTimer=()=>{if(T)clearTimeout(T.timer)};
+let qPend=false;const _nextQ=nextQ;nextQ=function(){if(!T)return;if(T.i<0){_nextQ();noTimer();return}if(qPend)return;qPend=true;const i=T.i;
+  whenQuiet(()=>{qPend=false;if(T&&T.i===i){_nextQ();noTimer()}},4000)};
 /* =================== OFFLINE =================== */
 addEventListener("offline",()=>toast(TX("ออฟไลน์อยู่ ยังเรียนต่อได้ ความคืบหน้าจะซิงก์เมื่อกลับมาออนไลน์","You're offline. Keep learning: progress syncs when you're back online.")));
 addEventListener("online",()=>{toast(TX("กลับมาออนไลน์แล้ว กำลังซิงก์","Back online, syncing"));if(dbDoc){pending=true;push()}});

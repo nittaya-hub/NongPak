@@ -862,7 +862,7 @@ function startTest(cards,title,gapOnly){const sceneOnly=gapOnly==="scene",pickMo
   $("#study").hidden=false;document.body.style.overflow="hidden";
   $("#study").innerHTML=`<div class="top"><button class="x" id="tq" aria-label="ออก">×</button><div class="bar"><i style="width:0"></i></div><span class="combo"></span></div>
   <div class="stage"><div class="done"><div class="pkrow">${mascot("idle",110)}</div><span class="mode">${esc(title)}</span><div style="font:800 40px var(--f-lat);color:var(--xp)">${qs.length} ข้อ</div>
-  <div class="grid"><div class="st"><b class="hearts">♥♥♥</b><small>หัวใจ 3 ดวง</small></div><div class="st"><b>15 วิ</b><small>ต่อข้อ</small></div><div class="st"><b>+โบนัส</b><small>ตอบเร็ว ตอบติดกัน</small></div></div>
+  <div class="grid"><div class="st"><b class="hearts">♥♥♥</b><small>หัวใจ 3 ดวง</small></div><div class="st"><b>ไม่จับเวลา</b><small>ตอบเมื่อพร้อม</small></div><div class="st"><b>+โบนัส</b><small>ตอบเร็ว ตอบติดกัน</small></div></div>
   <p class="hint">มีทั้งอ่าน ฟัง เลือกประโยคจากความหมาย และเกมจับคู่ ตอบผิดเสียหัวใจ หัวใจหมดเกมจบ</p></div></div>
   <div class="foot"><button class="primary" id="tgo">เริ่มเกม</button></div>`;
   $("#tq").onclick=closeTest;$("#tgo").onclick=nextQ;
