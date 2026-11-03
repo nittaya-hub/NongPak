@@ -271,3 +271,8 @@ nav.tabs{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:non
 .reveal .roman{margin-top:4px}
 .gfb .pk{flex:none;margin:-10px 0 -12px -6px}
 .fo .deco{z-index:0}.fo .it{z-index:1}
+.musicbtn{font-size:18px;font-weight:700;color:var(--accent)}
+.musicbtn[aria-pressed="false"]{color:var(--muted)}
+.musicbtn s{text-decoration-thickness:2px}
+.wlist span[data-say]{cursor:pointer}
+.wlist span[data-say]:hover{border-color:var(--accent)}

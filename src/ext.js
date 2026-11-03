@@ -246,8 +246,8 @@ const PR=it=>lang==="zh"?it.zhr:lang==="th"?it.thr:"";
 const PM=it=>lang==="th"?it.en:it.th;
 const scenesFor=g=>(PIC.scenes||[]).filter(s=>s.topics.includes(g));
 function gameShell(title,body,foot){const el=$("#study");el.hidden=false;document.body.style.overflow="hidden";
-  el.innerHTML=`<div class="top"><button class="x" id="gx" aria-label="ออก">×</button><div style="flex:1;font-weight:800;min-width:0">${esc(title)}</div><span class="combo" id="gscore"></span></div><div class="stage" id="stage">${body}</div>${foot?`<div class="foot" id="gfoot">${foot}</div>`:""}`;
-  $("#gx").onclick=()=>{GT&&clearInterval(GT);closeStudy()};return el}
+  el.innerHTML=`<div class="top"><button class="x" id="gx" aria-label="ออก">×</button><div style="flex:1;font-weight:800;min-width:0">${esc(title)}</div><span class="combo" id="gscore"></span>${musicBtn()}</div><div class="stage" id="stage">${body}</div>${foot?`<div class="foot" id="gfoot">${foot}</div>`:""}`;
+  $("#gx").onclick=()=>{GT&&clearInterval(GT);closeStudy()};bindMusic();musicStart();return el}
 let GT=null;
 function scenePicker(title,cb,extra){
   gameShell(title,`<div class="row-flex">${mascot("happy",64)}<p class="hint" style="flex:1">${TX("เลือกสถานการณ์ที่อยากเล่น","Pick a situation")}</p></div>${extra||""}
@@ -279,6 +279,26 @@ function gfb(ok,msg,at){const st=$("#stage")||$("#study");if(!st)return;let b=$(
 /* the classic games get the same sounds */
 const _resolveQ=resolveQ;resolveQ=function(ok,timeout){if(T&&T.qs[T.i]&&!T.qs[T.i].done)sfx(ok?"ok":"bad");return _resolveQ(ok,timeout)};
 document.addEventListener("click",e=>{const b=e.target.closest("#study button,#onb button");if(b&&!b.closest("[data-fi],[data-fo],[data-i],[data-j],#ws,[data-ci]"))sfx("tap")},true);
+
+
+/* =================== LIGHT GAME MUSIC (on/off, remembered) =================== */
+let musicOn=(()=>{try{return localStorage.getItem("koel-music")!=="0"}catch(e){return true}})(),MUS=null;
+function musicStart(){if(!musicOn||MUS)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){return}
+  const out=AC.createGain();out.gain.value=0;out.connect(AC.destination);out.gain.linearRampToValueAtTime(.05,AC.currentTime+1.2);
+  const BPM=96,B=60/BPM,mel=[0,4,7,9,7,4,2,4, 0,2,4,7,9,7,4,2],scale=[523.25,587.33,659.25,698.46,783.99,880,987.77,1046.5];
+  const PENT=[523.25,587.33,659.25,783.99,880,1046.5],chords=[[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]];
+  let step=0,next=AC.currentTime+.1;
+  const note=(f,t,d,type,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(out);o.start(t);o.stop(t+d+.05)};
+  const tick=()=>{while(next<AC.currentTime+.4){const bar=Math.floor(step/8)%4;
+      if(step%8===0)chords[bar].forEach(f=>note(f,next,B*7.5,"sine",.35));
+      if(step%2===0)note(PENT[(mel[step%16]+bar)%PENT.length],next,B*.9,"triangle",.55);
+      if(step%4===2)note(PENT[(step/2+bar*2)%PENT.length]*.5,next,B*.5,"sine",.25);
+      step++;next+=B/2}};
+  MUS={out,timer:setInterval(tick,120)};tick()}
+function musicStop(){if(!MUS)return;const m=MUS;MUS=null;try{m.out.gain.cancelScheduledValues(AC.currentTime);m.out.gain.setValueAtTime(m.out.gain.value,AC.currentTime);m.out.gain.linearRampToValueAtTime(0,AC.currentTime+.4)}catch(e){}setTimeout(()=>{clearInterval(m.timer);try{m.out.disconnect()}catch(e){}},500)}
+function musicBtn(){return`<button class="x musicbtn" id="gmusic" aria-pressed="${musicOn}" aria-label="${musicOn?TX("ปิดเพลง","Music off"):TX("เปิดเพลง","Music on")}" title="${musicOn?TX("ปิดเพลง","Music off"):TX("เปิดเพลง","Music on")}">${musicOn?"♫":"<s>♫</s>"}</button>`}
+function bindMusic(){const b=$("#gmusic");if(!b)return;b.onclick=e=>{e.stopPropagation();musicOn=!musicOn;try{localStorage.setItem("koel-music",musicOn?"1":"0")}catch(_){}if(musicOn)musicStart();else musicStop();b.outerHTML=musicBtn();bindMusic()}}
+const _closeStudy=closeStudy;closeStudy=function(){musicStop();return _closeStudy()};
 
 /* ---- 8. Flashcards by situation ---- */
 function flashPicker(){const T=topics(),order=Object.keys(T).filter(g=>g!=="mine");
@@ -337,7 +357,7 @@ function drawWS(){const W=WS;const hard=DIFF==="h";
   gameShell(TX("หาคำศัพท์: ","Word search: ")+(lang==="th"?sceneEN[W.sc.key]:W.sc.th),`
    <p class="hint" style="text-align:center;margin:0">${TX("ลากนิ้วจากตัวแรกถึงตัวสุดท้ายของคำ (หรือแตะตัวแรกแล้วแตะตัวสุดท้าย)","Drag from the first to the last letter (or tap first, then last)")}${DIFF!=="e"?TX(" · มีแนวทแยง",""):""}${hard?TX(" · คำอาจกลับหลัง"," · words may run backwards"):""}</p>
    <div class="ws" id="ws" style="grid-template-columns:repeat(${W.size},1fr)">${W.grid.map((r,y)=>r.map((ch,x)=>`<button data-x="${x}" data-y="${y}">${esc(ch)}</button>`).join("")).join("")}</div>
-   <div class="wlist">${W.words.map((w,i)=>`<span class="${w.found?"ok":""}" data-wi="${i}">${w.it.e} ${hard&&!w.found?esc(PM(w.it)):esc(stripArt(PW(w.it)))}</span>`).join("")}</div>`,
+   <div class="wlist">${W.words.map((w,i)=>`<span class="${w.found?"ok":""}" data-wi="${i}" data-say="${esc(PW(w.it))}" role="button" tabindex="0" title="${TX("แตะเพื่อฟัง","Tap to hear")}">${w.it.e} ${hard&&!w.found?esc(PM(w.it)):esc(stripArt(PW(w.it)))}</span>`).join("")}</div>`,
    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><p class="hint" style="margin:0;align-self:center">${TX("เจอแล้ว","Found")} <b>${W.words.filter(w=>w.found).length}/${W.words.length}</b> · ${W.score} ${TX("คะแนน","pts")}</p><button class="ghost" id="wsrev">${TX("กดเฉลย","Show answers")}</button></div>`);
   paintWS();
   const box=$("#ws");let start=null,curEnd=null;
