@@ -48,7 +48,8 @@ const PACKN={"th": {"f": ["Premwadee", "Ava", "Emma"], "m": ["Niwat", "Andrew", 
 const packId=(l,pv)=>(l||lang)+"-"+(pv||vset().pv||"f1");
 const PIDX={},PURL=new Map();
 function packIdx(id){if(PIDX[id]!==undefined)return PIDX[id];PIDX[id]=null;
-  fetch("v/"+id+".json").then(r=>r.ok?r.json():[]).then(a=>{PIDX[id]=new Set(a)}).catch(()=>{PIDX[id]=undefined});return null}
+  fetch("v/"+id+".json").then(r=>r.ok?r.json():[]).then(a=>{const k=Array.isArray(a)?a:a.k||[];PIDX[id]=new Set(k);PIDX[id].total=Array.isArray(a)?k.length:a.n||k.length;const el=document.querySelector(`[data-pvs="${id}"]`);if(el)el.textContent=pvLabel(id)}).catch(()=>{PIDX[id]=undefined});return null}
+function pvLabel(id){const ix=PIDX[id];if(!ix||!ix.size)return TX("กำลังเตรียม","preparing");const p=Math.floor(ix.size/(ix.total||ix.size)*100);return p>=97?TX("พร้อม","ready"):TX("กำลังเตรียม "+p+"%","preparing "+p+"%")}
 const packHas=(t,id)=>{const ix=packIdx(id);return !!(ix&&ix.has(hk(id.slice(0,2)+"|"+t)))};
 async function packSrc(url){if(PURL.has(url))return PURL.get(url);let r=null;
   try{if("caches" in window){const c=await caches.open(OFFC);r=await c.match(url);if(!r){r=await fetch(url);if(r.ok)c.put(url,r.clone())}}else r=await fetch(url)}catch(e){r=null}
@@ -63,7 +64,9 @@ const _speak=speak;
 let lastSay={t:"",at:0};
 function fallbackSpeak(t,slow){const cfg=vset();
   /* in-app voice chosen but this phrase has no file yet: use the bundled recording (plays reliably on phones), else the device voice */
-  if(cfg.mode==="pack"&&AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow);
+  if(cfg.mode==="pack"){const g=(cfg.pv||"f1")[0];
+    if(g==="m"&&langVoices().some(v=>vGender(v)==="m"))return genderSpeak(t,slow,"m");   /* male chosen: a real male device voice beats a female recording */
+    if(AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow)}
   const m=cfg.mode==="pack"?(cfg.pv||"f1")[0]:cfg.mode;
   if(lang==="th"&&(m==="f"||m==="m")&&voiceMissing()&&AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow);
   if(m==="f"||m==="m"||(lang==="fr"&&m==="app"&&!AIDX[hk(lang+"|"+t)]))return genderSpeak(t,slow,m==="app"?"":m);
@@ -117,7 +120,7 @@ function openSettings(){
     <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>${TX("ดูวิธีเริ่มใช้งานอีกครั้ง","Watch the quick guide again")}</b><small>${TX("แนะนำการใช้แอปสั้น ๆ","How to use Koel")}</small></span></button>
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่าน (ใช้กับทุกภาษา)","Voice (all languages)")}</h3>
-      <div class="field"><span>${TX("เสียงในแอป · ชัด เป็นธรรมชาติ ได้ยินเหมือนกันทุกเครื่อง","In-app voices · clear, natural, the same on every device")}</span><div class="vlist" role="radiogroup">${["f1","f2","f3","m1","m2","m3"].map(pv=>`<button type="button" class="vopt" role="radio" data-pv="${pv}" aria-checked="${cfg.mode==="pack"&&(cfg.pv||"f1")===pv}"><span class="vdot"></span><span style="flex:1;min-width:0">${pv[0]==="f"?TX("หญิง","Female"):TX("ชาย","Male")} ${pv[1]} · ${esc((PACKN[lang]||PACKN.en)[pv[0]][+pv[1]-1])}</span><small class="vg">${pv[0]==="f"?TX("หญิง","female"):TX("ชาย","male")}</small><span class="vplay" data-pvt="${pv}" aria-label="ฟัง">${ICON_PLAY}</span></button>`).join("")}</div></div>
+      <div class="field"><span>${TX("เสียงในแอป · ชัด เป็นธรรมชาติ ได้ยินเหมือนกันทุกเครื่อง","In-app voices · clear, natural, the same on every device")}</span><div class="vlist" role="radiogroup">${["f1","f2","f3","m1","m2","m3"].map(pv=>`<button type="button" class="vopt" role="radio" data-pv="${pv}" aria-checked="${cfg.mode==="pack"&&(cfg.pv||"f1")===pv}"><span class="vdot"></span><span style="flex:1;min-width:0">${pv[0]==="f"?TX("หญิง","Female"):TX("ชาย","Male")} ${pv[1]} · ${esc((PACKN[lang]||PACKN.en)[pv[0]][+pv[1]-1])}</span><small class="vg" data-pvs="${packId(lang,pv)}">${(packIdx(packId(lang,pv)),pvLabel(packId(lang,pv)))}</small><span class="vplay" data-pvt="${pv}" aria-label="ฟัง">${ICON_PLAY}</span></button>`).join("")}</div></div>
       <details class="vdev" ${cfg.mode!=="pack"?"open":""}><summary>${TX("ใช้เสียงที่ติดมากับเครื่องแทน","Use your device's own voices instead")}</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">
       <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?TX("อัตโนมัติ","Automatic"):TX("เสียงในแอป (เดิม)","Built-in voice")],["f",TX("เสียงผู้หญิง","Female voice")],["m",TX("เสียงผู้ชาย","Male voice")]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
       ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะใช้เสียงที่มีอยู่แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app uses the voice it has. You can add voices for free in your device settings (see below).")}</p>`}
@@ -134,7 +137,7 @@ function openSettings(){
   $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
   $("#s-dash").onclick=()=>{closeSheet();openDash()};
   const draft=()=>VDRAFT||(VDRAFT={mode:vsaved().mode,pv:vsaved().pv,rate:vsaved().rate,names:{[lang]:vsaved().name}});
-  const pvTry=pv=>{const id=packId(lang,pv),c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];
+  const pvTry=pv=>{const id=packId(lang,pv),c=DATA[lang].cards.slice(0,80).find(c=>packHas(c.t,id))||DATA[lang].cards[0];
     if(packHas(c.t,id)){lastSay={};packSpeak(c.t,false,id)}else{packIdx(id);toast(TX("เสียงนี้กำลังเตรียม ลองใหม่อีกสักครู่","This voice is still being prepared, try again soon"))}};
   document.querySelectorAll("[data-pv]").forEach(b=>b.onclick=e=>{const d=draft();d.mode="pack";d.pv=b.dataset.pv;
     document.querySelectorAll("[data-pv]").forEach(x=>x.setAttribute("aria-checked",x===b));document.querySelectorAll("[data-vm]").forEach(x=>x.setAttribute("aria-pressed","false"));voiceDirty();pvTry(b.dataset.pv)});
@@ -826,7 +829,7 @@ const OFFC="koel-offline";
 function offFiles(l){const f=(ACHUNKS[l]||[]).map(i=>"a"+i+".js");if(l==="zh"){for(const i of new Set(Object.values(SIDX)))f.push("k"+i+".js");f.push("hw.js")}return f}
 /* files for offline: the chosen in-app voice (if any) replaces the older bundled clips */
 async function offList(l){const cfg=vset();if(cfg.mode==="pack"){const id=packId(l,cfg.pv);
-    try{const a=await (await fetch("v/"+id+".json")).json();const f=["v/"+id+".json"].concat(a.map(h=>"v/"+id+"/"+h+".mp3"));
+    try{const j=await (await fetch("v/"+id+".json")).json(),a=Array.isArray(j)?j:j.k||[];const f=["v/"+id+".json"].concat(a.map(h=>"v/"+id+"/"+h+".mp3"));
       if(l==="zh"){for(const i of new Set(Object.values(SIDX)))f.push("k"+i+".js");f.push("hw.js")}return f}catch(e){}}
   return offFiles(l)}
 async function offState(l){if(!("caches" in window))return{have:0,n:0};const c=await caches.open(OFFC),f=await offList(l);
@@ -914,3 +917,5 @@ const _renderD=render;render=function(){
 
 function voiceDirty(){const b=$("#s-vsave"),m=$("#s-vmsg");if(b){b.disabled=false;b.textContent=TX("บันทึกการตั้งค่าเสียง","Save voice settings")}
   if(m)m.innerHTML=`<b style="color:var(--again)">${TX("ยังไม่ได้บันทึก","Not saved yet")}</b> · ${TX("กด บันทึก เพื่อใช้จริงในแอป","press Save to use it in the app")}`}
+
+try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
