@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Koel">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light only">
+<meta name="description" content="Koel แอปเรียนภาษาจีน เยอรมัน อังกฤษ ฝรั่งเศส และไทย แบบพูดได้จริง ใช้ฟรี">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Koel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+Thai+Looped:wght@400&family=Noto+Serif+SC:wght@600;800&display=swap">
+<style>
+/* Layout: a pocket phrasebook app. One column, bottom tab bar, the phrase is always the biggest thing on screen. */
+:root{
+  --paper:#ffffff; --card:#ffffff; --ink:#1d1c1a; --muted:#6b6862; --line:#e6e3dc; --soft:#f4f2ed;
+  --zh:#cf3b2a; --de:#c08a12; --en:#2463c9;--th:#16846b; --fr:#7a3fb8; --good:#2f8a55; --hard:#b98015; --again:#c2483d; --xp:#6b4fd8;
+  --accent:var(--zh); --accent-soft:color-mix(in srgb,var(--accent) 11%,var(--card)); --on-accent:#fff;
+  --f-th:"IBM Plex Sans Thai",system-ui,sans-serif; --f-lat:"Fraunces",Georgia,serif; --f-han:"Noto Serif SC","Songti SC",serif;
+  color-scheme:light;
+}
+body[data-lang="de"]{--accent:var(--de)}
+body[data-lang="en"]{--accent:var(--en)}
+body[data-lang="th"]{--accent:var(--th)}
+body[data-lang="fr"]{--accent:var(--fr)}
+body{--accent-soft:color-mix(in srgb,var(--accent) 11%,var(--card))}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--paper);overflow-x:hidden}
+.stage>*,.foot>*,.panel>*{max-width:100%;min-width:0}
+p,span,b,small,.opt,.tip,.hint{overflow-wrap:anywhere}
+body{color:var(--ink);font-family:var(--f-th);font-size:16px;line-height:1.55}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+button{font-family:inherit;color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.han{font-family:var(--f-han)} body[data-lang="de"] .han,body[data-lang="en"] .han,body[data-lang="fr"] .han{font-family:var(--f-lat)}
+body[data-lang="th"] .han,body[data-lang="th"] .seal,body[data-lang="th"] .tile .ic,body[data-lang="th"] .glyph{font-family:var(--f-th)}
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.seal{width:40px;height:40px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:800 21px var(--f-han);flex:none}
+body[data-lang="de"] .seal,body[data-lang="en"] .seal{font-family:var(--f-lat);font-size:18px}
+.brand b{display:block;font-size:17px;line-height:1.2}
+.brand small{color:var(--muted);font-size:12.5px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;flex:none}
+.seg button{border:0;background:none;color:var(--muted);font-weight:600;font-size:13.5px;padding:6px 10px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+/* bottom tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:560px}
+nav.tabs button{border:0;background:none;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;min-width:0}
+nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+/* cards & bits */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row-flex{display:flex;align-items:center;gap:12px}
+.muted{color:var(--muted)}
+.hint{color:var(--muted);font-size:13.5px;margin:0}
+h2{font-size:16px;margin:0}
+.primary{background:var(--accent);color:var(--on-accent);border:0;border-radius:14px;font-weight:700;font-size:17px;padding:15px 18px;cursor:pointer;width:100%;box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.primary:active{transform:translateY(2px);box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.primary:disabled{opacity:.45;cursor:default;box-shadow:none}
+.ghost{background:var(--card);border:1px solid var(--line);border-radius:12px;font-weight:600;font-size:14px;padding:9px 14px;cursor:pointer}
+.link{background:none;border:0;color:var(--accent);font-weight:600;font-size:13.5px;cursor:pointer;padding:4px 0}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
+.chip.ok{background:color-mix(in srgb,var(--good) 14%,var(--card));color:var(--good)}
+.chip.warn{background:color-mix(in srgb,var(--hard) 16%,var(--card));color:var(--hard)}
+.bar{height:8px;background:var(--soft);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .4s}
+/* goal picker */
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goal{border:2px solid var(--line);background:var(--card);border-radius:16px;padding:14px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.goal b{font:800 30px var(--f-lat);line-height:1;color:var(--accent)}
+.goal span{font-weight:700}
+.goal small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.goal[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+/* today hero */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.ring{width:92px;height:92px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.1}
+.ring .t b{font:800 22px var(--f-lat);display:block;font-variant-numeric:tabular-nums}
+.ring .t small{font-size:11px;color:var(--muted)}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.st{background:var(--soft);border-radius:12px;padding:8px 10px}
+.st b{font:800 20px var(--f-lat);display:block;font-variant-numeric:tabular-nums;line-height:1.15}
+.st small{font-size:12px;color:var(--muted)}
+.flame{color:#e46a1f}
+/* path */
+.path{display:flex;flex-direction:column;gap:0}
+.node{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:8px 0;background:none;border:0;text-align:left;cursor:pointer;width:100%;position:relative}
+.node .dot{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:var(--soft);color:var(--muted);border:2px solid var(--line);position:relative;z-index:1}
+.node.done .dot{background:var(--good);border-color:var(--good);color:#fff}
+.node.now .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:0 0 0 5px var(--accent-soft)}
+.node:not(:last-child)::after{content:"";position:absolute;left:19px;top:44px;bottom:-4px;width:2px;background:var(--line)}
+.node .nm{font-weight:600;font-size:15px;min-width:0}
+.node .nm small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.node .pc{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* study */
+.study{position:fixed;inset:0;z-index:30;background:var(--paper);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.study .top{display:flex;align-items:center;gap:12px;max-width:560px;width:100%;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.x{width:36px;height:36px;border-radius:50%;border:0;background:var(--soft);cursor:pointer;font-size:20px;line-height:1;flex:none}
+.study .top .bar{flex:1;height:12px}
+.combo{font-weight:700;color:var(--xp);font-size:14px;min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.stage{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;max-width:560px;width:100%;margin:0 auto;padding:8px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.mode{align-self:flex-start;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
+.ask{font-size:20px;font-weight:700;margin:0;text-wrap:balance}
+.big{font-weight:800;font-size:clamp(34px,10vw,50px);line-height:1.2;text-wrap:balance;margin:0;overflow-wrap:anywhere}
+body[data-lang="de"] .big,body[data-lang="en"] .big,body[data-lang="th"] .big{font-size:clamp(28px,8vw,40px)}
+.roman{font-family:var(--f-lat);font-size:19px;color:var(--accent);margin:0}
+.pron{font-size:17px;color:var(--muted);margin:0}
+.mean{font-size:22px;font-weight:700;margin:0;text-wrap:balance}
+.tip{font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0}
+.tip b{color:var(--accent)}
+.exbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.exbox .han{font-size:18px;font-weight:600}
+.exbox small{display:block;color:var(--muted);font-size:13.5px}
+.reveal{display:flex;flex-direction:column;gap:6px;text-align:center;padding:10px 0}
+.audio{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.play{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.play svg{width:18px;height:18px;fill:currentColor}
+.play.huge{width:110px;height:110px;border-radius:50%;justify-content:center;border-color:var(--accent);color:var(--accent);padding:0;margin:8px auto}
+.play.huge svg{width:44px;height:44px}
+.opts{display:grid;gap:10px}
+.opt{border:2px solid var(--line);border-bottom-width:4px;background:var(--card);border-radius:14px;padding:13px 14px;text-align:left;font-size:16.5px;font-weight:600;cursor:pointer}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}
+.opt.wrong{border-color:var(--again);background:color-mix(in srgb,var(--again) 10%,var(--card))}
+.opt:disabled{cursor:default}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.hearts{letter-spacing:1px}
+.foot{max-width:560px;width:100%;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--line);background:var(--card)}
+.foot.good{background:color-mix(in srgb,var(--good) 12%,var(--card))}
+.foot.bad{background:color-mix(in srgb,var(--again) 10%,var(--card))}
+.fbline{font-weight:700;margin:0 0 10px;font-size:16px}
+.foot.good .fbline{color:var(--good)} .foot.bad .fbline{color:var(--again)}
+.rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rate button{border:2px solid var(--line);border-bottom-width:4px;background:var(--card);border-radius:14px;padding:10px 4px;cursor:pointer;font-weight:700;font-size:15px;display:flex;flex-direction:column;align-items:center}
+.rate button small{font-weight:400;font-size:12px;color:var(--muted)}
+.rate .r0{border-color:var(--again);color:var(--again)} .rate .r1{border-color:var(--hard);color:var(--hard)} .rate .r2{border-color:var(--good);color:var(--good)}
+.done{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:30px}
+.done .xp{font:800 56px var(--f-lat);color:var(--xp);line-height:1}
+.done .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:40;width:100%;height:100%}
+/* library */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tile .ic{font:800 22px var(--f-han);color:var(--accent)}
+body[data-lang="de"] .tile .ic,body[data-lang="en"] .tile .ic{font-family:var(--f-lat)}
+.tile b{font-size:14.5px;line-height:1.35}
+.tile small{color:var(--muted);font-size:12.5px}
+.tile .bar{height:6px}
+.tile.pri{border:2px solid var(--accent)}
+.sec{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin:6px 0 -4px}
+.list{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 14px;border-top:1px solid var(--line);align-items:center}
+.item:first-child{border-top:0}
+.item .t{font-weight:700;font-size:21px;min-width:0;overflow-wrap:anywhere}
+body[data-lang="de"] .item .t,body[data-lang="en"] .item .t,body[data-lang="th"] .item .t{font-size:18px}
+.item .s{grid-column:1;font-size:13.5px;color:var(--muted);min-width:0}
+.item .s em{font-style:normal;font-family:var(--f-lat);color:var(--accent)}
+.item .m{grid-column:1;font-size:15px}
+.item .e{grid-column:1;font-size:13.5px;color:var(--muted)}
+.item .side{grid-row:1 / span 4;grid-column:2;display:flex;flex-direction:column;align-items:center;gap:6px}
+.lvl{display:flex;gap:2px}.lvl i{width:6px;height:6px;border-radius:2px;background:var(--line)}.lvl i.on{background:var(--good)}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--accent);display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:19px;height:19px;fill:currentColor}
+.back{display:flex;align-items:center;gap:8px}
+form.add{display:grid;gap:10px}
+form.add label{display:grid;gap:4px;font-size:13.5px;font-weight:600}
+form.add input,form.add select{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:10px 12px;font:400 16px var(--f-th);min-width:0}
+/* chat */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-weight:600;font-size:14px;cursor:pointer}
+.chip-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;border-radius:16px;padding:10px 13px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.msg.bot{background:var(--card);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--accent);color:var(--on-accent);align-self:flex-end;border-bottom-right-radius:4px}
+.msg .mt{font-size:20px;font-weight:700;overflow-wrap:anywhere}
+.msg .mr{font-family:var(--f-lat);color:var(--accent);font-size:14.5px}
+.msg .mp,.msg .mm{font-size:14px;color:var(--muted)}
+.msg .fb{font-size:13.5px;background:var(--accent-soft);border-radius:8px;padding:6px 9px}
+.sugg{display:flex;flex-direction:column;gap:6px}
+.sugg button{text-align:left;border:1px dashed var(--line);background:none;border-radius:12px;padding:8px 12px;cursor:pointer;font-size:14px}
+.sugg button b{font-size:16px;margin-right:6px}
+.composer{display:flex;gap:8px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px;font:400 16px var(--f-th)}
+.composer .primary{width:auto;padding:12px 18px;font-size:15px}
+.empty{border:1px dashed var(--line);border-radius:16px;padding:18px;color:var(--muted);font-size:14px;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
+.sync{font-size:12px;color:var(--muted);text-align:center}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+.pop{animation:pop .3s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* v9 additions */
+header{flex-wrap:wrap}
+.reg{display:inline-block;border-radius:999px;padding:0 8px;font-size:11.5px;font-weight:700;line-height:1.7;vertical-align:middle;margin-left:4px;white-space:nowrap}
+.reg.polite{background:#e8f1fb;color:#1f5fa8}.reg.casual{background:#fdeee6;color:#b4521f}.reg.work{background:#ecebfa;color:#4b3db3}.reg.sx-m{background:#e3f0ff;color:#1b5fae}.reg.sx-f{background:#ffe6f1;color:#b02a6b}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;cursor:pointer}
+.filters button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.knownbtn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;cursor:pointer;align-self:center}
+.knownbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--good) 14%,var(--card));border-color:var(--good);color:var(--good)}
+.mini{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:14px;cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+.mini[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.gapline{font-size:22px;font-weight:700;text-align:center;margin:0;text-wrap:balance}
+.gapline u{text-decoration:none;display:inline-block;min-width:70px;border-bottom:3px solid var(--accent);color:var(--accent)}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.acell{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.acell b{font:700 24px var(--f-lat);line-height:1.2;overflow-wrap:anywhere}
+body[data-lang="zh"] .acell b{font-family:var(--f-han)}
+.acell small{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+.acell.on{border-color:var(--accent)}
+.glyph{font:800 clamp(72px,24vw,120px) var(--f-lat);text-align:center;line-height:1.1;margin:0;color:var(--ink)}
+body[data-lang="zh"] .glyph{font-family:var(--f-han)}
+.trace{position:relative;width:min(100%,300px);aspect-ratio:1;margin:0 auto;border:1px solid var(--line);border-radius:16px;background:
+ linear-gradient(var(--line),var(--line)) center/100% 1px no-repeat,linear-gradient(var(--line),var(--line)) center/1px 100% no-repeat,var(--card);overflow:hidden;touch-action:none}
+.trace .ghost-ch{position:absolute;inset:0;display:grid;place-items:center;font:400 190px var(--f-han);color:#e9e6df;pointer-events:none;line-height:1}
+body:not([data-lang="zh"]) .trace .ghost-ch{font-family:"Comic Sans MS","Chalkboard SE",var(--f-lat);font-size:170px}
+body[data-lang="th"] .trace .ghost-ch{font-family:"Noto Sans Thai Looped",var(--f-th);font-size:150px;line-height:1.4}
+body[data-lang="th"] .seal{font-size:22px}
+body[data-lang="th"] .tile .ic{font-size:15px}
+.trace canvas{position:absolute;inset:0;width:100%;height:100%}
+.trace .hw{position:absolute;inset:0}
+.chain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chain span{background:var(--soft);border-radius:999px;padding:3px 10px;font-size:14px}
+.chain span:last-child{background:var(--accent);color:var(--on-accent)}
+.word-now{font-size:clamp(30px,9vw,44px);font-weight:800;text-align:center;margin:0;overflow-wrap:anywhere}
+.word-now mark{background:none;color:var(--accent);text-decoration:underline;text-decoration-thickness:4px;text-underline-offset:6px}
+.gcard{display:flex;gap:12px;align-items:center;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;width:100%}
+.gcard .gi{width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:800 20px var(--f-han);flex:none}
+.gcard b{display:block;font-size:16px}.gcard small{color:var(--muted);font-size:13px}
+.src{font-size:11.5px;color:var(--muted)}
+.src a{color:var(--muted)}
+.scene{position:relative;border-radius:18px;padding:12px;display:flex;align-items:flex-end;gap:6px;min-height:170px;overflow:hidden}
+.scene .props span{position:absolute;font-size:30px;animation:sc-float 3s ease-in-out infinite;opacity:.9}
+.scene .sc-pk{flex:none;animation:sc-in .5s cubic-bezier(.3,1.4,.5,1) both}
+.scene .bubble{position:relative;z-index:1;background:#fff;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 0 rgba(0,0,0,.06);margin-bottom:40px;animation:sc-pop .35s .35s both;min-width:0;flex:1}
+.scene .bubble::before{content:"";position:absolute;left:-8px;bottom:14px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+.scene .bubble small{color:var(--muted);font-size:12px;font-weight:600}.scene .bubble b{font-size:16.5px;line-height:1.35}.scene .bubble span{font-size:13.5px;color:var(--muted)}
+@keyframes sc-float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+@keyframes sc-in{from{transform:translateX(-80px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes sc-pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.brand .seal{background:none!important;width:44px;height:44px;overflow:visible}
+#gate{position:fixed;inset:0;z-index:100;background:var(--paper);display:grid;place-items:center;padding:20px;overflow:auto}
+.gbox{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.gbox h1{margin:0;font-size:26px}
+.gbox .glab{align-self:flex-start;font-weight:600;font-size:14px;margin-top:8px}
+.gbox input{width:100%;border:1px solid var(--line);border-radius:12px;padding:13px 14px;font:400 17px var(--f-th);background:var(--card);color:var(--ink)}
+.gbox .gerr{color:var(--again);font-size:14px;margin:0;min-height:20px}
+.copy{font-size:12px;color:var(--muted);margin:8px 0 0;text-align:center}
+.stage>*{flex-shrink:0}
+.study .top,.study .foot{flex-shrink:0}
+.study{height:100%;height:100dvh}
+.steps .stepgrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:6px}
+.step{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 10px 6px 6px}
+.step svg{flex:none}.step b{display:block;font-size:14.5px}.step small{color:var(--muted);font-size:13px}
+@media(min-width:520px){.steps .stepgrid{grid-template-columns:1fr 1fr}}
+.filters button.han,.filters [data-hz]{font-family:var(--f-han);font-size:16px}
+</style>
+<style>
+body{margin:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+
+body.standalone nav.tabs .in{grid-template-columns:repeat(4,1fr)}
+body.standalone #tab-chat,body.standalone #auto{display:none}
+</style>
+<style>
+/*__EXTCSS__*/
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header id="hdr">
+    <div class="brand"><div class="seal" id="seal">中</div><div><b>Koel</b><small id="sub">ประโยคที่ใช้คุยได้จริง</small></div></div>
+    <div class="seg" role="group" aria-label="เลือกภาษา">
+      <button id="lang-zh" data-lang="zh" aria-pressed="true">中文</button>
+      <button id="lang-de" data-lang="de" aria-pressed="false" data-s="DE">Deutsch</button>
+      <button id="lang-en" data-lang="en" aria-pressed="false" data-s="EN">English</button>
+      <button id="lang-fr" data-lang="fr" aria-pressed="false" data-s="FR">Français</button>
+      <button id="lang-th" data-lang="th" aria-pressed="false">ไทย</button>
+    </div>
+    <button class="gear" id="gear" aria-label="ตั้งค่าและบัญชี"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <main id="view"></main>
+  <p class="sync" id="sync">บันทึกในเครื่องนี้แล้ว · ย้ายเครื่องใช้รหัสสำรองในหน้าวันนี้</p>
+  <p class="copy">© 2026 Koel สงวนลิขสิทธิ์ ห้ามคัดลอก ดัดแปลง เผยแพร่ หรือนำเนื้อหาและโค้ดไปใช้โดยไม่ได้รับอนุญาต</p>
+</div>
+
+<nav class="tabs"><div class="in"><div class="railbrand" id="railbrand"></div>
+  <button id="tab-today" data-tab="today" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>วันนี้</button>
+  <button id="tab-lib" data-tab="lib" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="7" height="7" rx="2"/><rect x="13.5" y="4" width="7" height="7" rx="2"/><rect x="3.5" y="14" width="7" height="7" rx="2"/><rect x="13.5" y="14" width="7" height="7" rx="2"/></svg>สถานการณ์</button>
+  <button id="tab-alpha" data-tab="alpha" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 19l5-14h1l5 14M6 14h7M16 9h5M18.5 6.5v12"/></svg>ตัวอักษร</button>
+  <button id="tab-game" data-tab="game" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 10.5v4M6 12.5h4M15.5 11.5h.01M18 13.5h.01"/></svg>เกม</button>
+</div></nav>
+
+<div id="study" class="study" hidden></div>
+
+<script>
+const STANDALONE=true;
+document.body.classList.add("standalone");
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+let DATA=null,ALPHA=null,HANZI=null;const ENC=/*__ENC__*/;
+const AUDIO={};let AIDX={};const SIDX={"我":0,"了":0,"吗":0,"好":0,"不":0,"一":0,"这":0,"的":0,"你":0,"可":0,"有":0,"下":0,"么":0,"大":0,"天":0,"个":0,"要":0,"是":0,"在":0,"点":0,"能":0,"您":0,"来":0,"儿":0,"以":0,"没":0,"子":0,"看":0,"哪":0,"什":0,"上":0,"吧":0,"吃":0,"里":0,"去":0,"们":0,"会":0,"说":0,"请":0,"得":0,"机":0,"开":0,"意":0,"到":0,"想":0,"多":0,"心":0,"时":0,"打":0,"太":0,"间":0,"问":0,"家":0,"给":0,"菜":0,"色":0,"很":0,"国":0,"人":0,"过":0,"今":0,"再":0,"行":0,"车":0,"真":0,"方":0,"帮":0,"电":0,"别":0,"还":0,"生":0,"次":0,"便":0,"先":0,"道":0,"关":0,"见":0,"小":0,"房":0,"回":0,"事":0,"欢":0,"手":0,"用":0,"慢":0,"地":0,"包":0,"最":0,"明":0,"认":0,"怎":0,"做":0,"学":0,"喜":0,"思":0,"麻":0,"烦":0,"发":0,"近":0,"等":0,"谢":0,"放":0,"边":0,"期":0,"懂":0,"西":0,"中":0,"空":0,"快":0,"啊":0,"出":0,"就":0,"钱":0,"法":0,"题":0,"件":0,"听":0,"知":0,"亚":0,"文":0,"起":0,"饭":0,"晚":0,"系":0,"走":0,"那":0,"热":0,"水":0,"少":0,"对":0,"辣":0,"买":0,"样":0,"觉":0,"同":0,"进":0,"果":0,"定":0,"记":0,"叫":0,"作":0,"照":0,"啦":0,"加":0,"几":0,"路":0,"办":0,"班":0,"门":0,"现":0,"服":0,"议":0,"前":0,"价":0,"日":0,"话":0,"马":0,"喔":0,"星":0,"面":0,"高":0,"老":0,"喝":0,"李":0,"单":0,"后":0,"试":0,"候":0,"新":0,"然":0,"也":0,"早":0,"忙":0,"雨":0,"算":0,"累":0,"白":0,"识":0,"泰":0,"久":0,"干":0,"爱":0,"周":1,"女":1,"理":1,"位":1,"号":1,"被":1,"报":1,"解":1,"怕":1,"卡":1,"经":1,"比":1,"假":1,"鱼":1,"贵":1,"美":1,"自":1,"笑":1,"张":1,"跟":1,"住":1,"带":1,"票":1,"语":1,"清":1,"随":1,"气":1,"三":1,"成":1,"把":1,"量":1,"宜":1,"为":1,"外":1,"息":1,"他":1,"东":1,"年":1,"情":1,"公":1,"忘":1,"利":1,"尼":1,"兴":1,"呢":1,"工":1,"玩":1,"微":1,"信":1,"扫":1,"杯":1,"聊":1,"约":1,"保":1,"哈":1,"店":1,"口":1,"坏":1,"换":1,"师":1,"借":1,"充":1,"英":1,"附":1,"药":1,"两":1,"香":1,"米":1,"客":1,"结":1,"都":1,"完":1,"确":1,"音":1,"共":1,"如":1,"只":1,"难":1,"提":1,"分":1,"条":1,"需":1,"担":1,"合":1,"拉":1,"病":1,"着":1,"午":1,"楼":1,"决":1,"本":1,"蓝":1,"兰":1,"斯":1,"克":1,"从":1,"差":1,"游":1,"书":1,"联":1,"告":1,"声":1,"站":1,"酒":1,"续":1,"订":1,"退":1,"安":1,"坐":1,"付":1,"疼":1,"些":1,"错":1,"款":1,"主":1,"实":1,"体":1,"复":1,"商":1,"已":1,"接":1,"考":1,"长":1,"运":1,"所":1,"衣":1,"活":1,"找":1,"舒":1,"医":1,"重":1,"餐":1,"金":1,"洗":1,"朋":1,"友":1,"变":1,"搞":1,"度":1,"奶":1,"男":1,"习":1,"牙":1,"瓜":1,"市":1,"远":1,"平":1,"拍":1,"红":1,"末":1,"持":1,"拜":1,"铁":1,"往":1,"护":1,"登":1,"网":1,"调":1,"室":1,"密":1,"码":1,"辆":1,"馆":1,"四":1,"推":1,"花":1,"肉":1,"始":1,"案":1,"但":1,"让":2,"正":2,"答":2,"苦":2,"像":2,"头":2,"格":2,"受":2,"证":2,"百":2,"步":2,"交":2,"费":2,"邮":2,"于":2,"查":2,"收":2,"待":2,"动":2,"卖":2,"器":2,"院":2,"感":2,"睡":2,"休":2,"楚":2,"改":2,"消":2,"才":2,"毛":2,"迷":2,"火":2,"死":2,"迟":2,"字":2,"课":2,"亮":2,"每":2,"油":2,"己":2,"乐":2,"球":2,"常":2,"半":2,"节":2,"哥":2,"黄":2,"绿":2,"越":2,"极":2,"场":2,"第":2,"旅":2,"咱":2,"靠":2,"窗":2,"座":2,"飞":2,"入":2,"租":2,"海":2,"丢":2,"偷":2,"救":2,"肚":2,"图":2,"片":2,"务":2,"淡":2,"双":2,"温":2,"首":2,"数":2,"句":2,"全":2,"五":2,"之":2,"总":2,"容":2,"稍":2,"辛":2,"折":2,"应":2,"更":2,"虑":2,"论":2,"货":2,"板":2,"块":2,"除":2,"怪":2,"颜":2,"刷":2,"送":2,"冒":2,"昨":2,"处":2,"祝":2,"刚":2,"视":2,"物":2,"梯":2,"身":2,"况":2,"鲜":2,"印":2,"脑":2,"妈":2,"离":2,"名":2,"释":2,"当":2,"茶":2,"饿":2,"急":2,"欸":2,"超":2,"咖":2,"啡":2,"冷":2,"够":2,"漂":2,"伞":2,"相":2,"校":2,"歌":2,"孩":2,"南":2,"北":2,"风":2,"影":2,"鞋":2,"惯":2,"街":2,"雪":2,"黑":2,"甜":2,"桃":2,"龙":2,"眼":2,"榴":2,"山":2,"菇":2,"贝":2,"罗":2,"巴":2,"典":2,"洛":2,"选":2,"遇":2,"种":2,"化":2,"司":2,"姓":2,"曼":2,"谷":2,"和":2,"愉":2,"左":2,"拐":2,"右":2,"航":3,"延":3,"误":3,"寄":3,"存":3,"傅":3,"址":3,"概":3,"滴":3,"宝":3,"写":3,"使":3,"烧":3,"霉":3,"素":3,"敏":3,"七":3,"员":3,"荐":3,"招":3,"鸡":3,"碗":3,"筷":3,"瓶":3,"啤":3,"冰":3,"糖":3,"咸":3,"饱":3,"账":3,"程":3,"月":3,"据":3,"简":3,"介":3,"绍":3,"观":3,"恐":3,"具":3,"补":3,"谁":3,"负":3,"责":3,"内":3,"静":3,"屏":3,"幕":3,"享":3,"麦":3,"九":3,"低":3,"质":3,"队":3,"领":3,"部":3,"讨":3,"由":3,"签":3,"希":3,"望":3,"任":3,"而":3,"虽":3,"非":3,"穿":3,"八":3,"康":3,"针":3,"预":3,"取":3,"桶":3,"巾":3,"命":3,"警":3,"失":3,"困":3,"季":3,"躺":3,"无":3,"羡":3,"慕":3,"截":3,"止":3,"又":3,"纸":3,"盘":3,"群":3,"母":3,"厕":3,"顾":3,"厨":3,"渴":3,"值":3,"检":3,"嘛":3,"台":3,"湾":3,"呀":3,"原":3,"诉":3,"建":3,"惜":3,"迎":3,"继":3,"害":3,"椒":3,"灯":3,"唱":3,"跳":3,"舞":3,"妹":3,"拿":3,"牛":3,"跑":3,"床":3,"汽":3,"六":3,"二":3,"读":3,"蛋":3,"汉":3,"业":3,"终":3,"松":3,"礼":3,"适":3,"功":3,"努":3,"力":3,"轻":3,"晴":3,"阴":3,"箱":3,"波":3,"爸":3,"姐":3,"弟":3,"阳":3,"向":3,"橙":3,"银":3,"深":3,"酸":3,"葡":3,"萄":3,"草":3,"莓":3,"菠":3,"萝":3,"梨":3,"莲":3,"番":3,"石":4,"丹":4,"杏":4,"茄":4,"豆":4,"虾":4,"宾":4,"尔":4,"坦":4,"伊":4,"瑞":4,"耳":4,"脱":4,"维":4,"准":4,"备":4,"参":4,"其":4,"象":4,"目":4,"教":4,"段":4,"绩":4,"易":4,"惊":4,"界":4,"城":4,"腿":4,"叔":4,"爷":4,"河":4,"笔":4,"词":4,"趣":4,"初":4,"嗨":4,"称":4,"呼":4,"营":4,"销":4,"巧":4,"辞":4,"浴":4,"停":4,"尾":4,"返":4,"趟":4,"乘":4,"线":4,"支":4,"青":4,"牌":4,"份":4,"宫":4,"丁":4,"猪":4,"催":4,"味":4,"顿":4,"剩":4,"齐":4,"项":4,"背":4,"景":4,"汇":4,"断":4,"遍":4,"纪":4,"络":4,"摄":4,"余":4,"优":4,"惠":4,"供":4,"降":4,"各":4,"团":4,"示":4,"导":4,"遗":4,"憾":4,"式":4,"承":4,"批":4,"呗":4,"何":4,"且":4,"因":4,"际":4,"反":4,"另":4,"否":4,"则":4,"或":4,"者":4,"管":4,"袋":4,"十":4,"挂":4,"咳":4,"嗽":4,"嗓":4,"晕":4,"吐":4,"尿":4,"严":4,"治":4,"副":4,"伤":4,"蚊":4,"咬":4,"痒":4,"喂":4,"转":4,"频":4,"含":4,"押":4,"锁":4,"堵":4,"隔":4,"壁":4,"吵":4,"醒":4,"勿":4,"扰":4,"指":4,"落":4,"派":4,"碰":4,"撞":4,"骗":4,"吞":4,"抓":4,"追":4,"剧":4,"郁":4,"闷":4,"挺":4,"谓":4,"及":4,"抄":4,"骂":4,"韵":4,"察":4,"厅":4,"勺":4,"叉":4,"饮":4,"料":4,"托":4,"赞":4,"扯":4,"夸":4,"耶":4,"此":5,"未":5,"弃":5,"切":5,"旁":5,"零":5,"京":5,"净":5,"澡":5,"特":5,"闹":5,"排":5,"勇":5,"敢":5,"柔":5,"幸":5,"倒":5,"紧":5,"诚":5,"熟":5,"悉":5,"陌":5,"耐":5,"貌":5,"丰":5,"富":5,"败":5,"陪":5,"伴":5,"顺":5,"逛":5,"散":5,"歉":5,"谅":5,"省":5,"浪":5,"较":5,"刮":5,"园":5,"钥":5,"匙":5,"铃":5,"帘":5,"镜":5,"垃":5,"圾":5,"插":5,"遥":5,"控":5,"炉":5,"锅":5,"帽":5,"套":5,"光":5,"蕉":5,"傍":5,"夜":5,"永":5,"钟":5,"秒":5,"灰":5,"粉":5,"紫":5,"棕":5,"浅":5,"褐":5,"腻":5,"臭":5,"苹":5,"芒":5,"木":5,"柠":5,"檬":5,"樱":5,"荔":5,"枝":5,"猕":5,"猴":5,"竹":5,"椰":5,"枣":5,"柿":5,"凤":5,"覆":5,"盆":5,"柚":5,"迦":5,"雾":5,"桑":5,"葚":5,"杨":5,"桔":5,"甘":5,"蔗":5,"丽":5,"胡":5,"卜":5,"玉":5,"洋":5,"葱":5,"蒜":5,"土":5,"芽":5,"芹":5,"芥":5,"鲍":5,"螃":5,"蟹":5,"鱿":5,"类":5,"牡":5,"蛎":5,"贻":5,"扇":5,"枪":5,"鲈":5,"鳗":5,"章":5,"籽":5,"韩":5,"德":5,"澳":5,"坡":5,"菲":5,"律":5,"俄":5,"缅":5,"甸":5,"柬":5,"埔":5,"寨":5,"挝":5,"蒙":5,"古":5,"孟":5,"泊":5,"基":5,"朗":5,"旦":5,"黎":5,"嫩":5,"墨":6,"士":6,"荷":6,"挪":6,"威":6,"摩":6,"肯":6,"立":6,"陶":6,"宛":6,"萨":6,"沙":6,"塞":6,"伐":6,"乌":6,"捷":6,"匈":6,"择":6,"助":6,"该":6,"束":6,"效":6,"言":6,"计":6,"划":6,"标":6,"录":6,"掉":6,"练":6,"拒":6,"绝":6,"异":6,"怜":6,"亲":6,"敬":6,"恨":6,"恶":6,"避":6,"免":6,"性":6,"妻":6,"丈":6,"夫":6,"阿":6,"姨":6,"婚":6,"邻":6,"居":6,"千":6,"春":6,"冬":6,"刻":6,"秋":6,"万":6,"夏":6,"羊":6,"糕":6,"汁":6,"表":6,"衬":6,"衫":6,"斤":6,"角":6,"裤":6,"皮":6,"裙":6,"元":6,"船":6,"骑":6,"世":6,"铅":6,"历":6,"史":6,"留":6,"级":6,"求":6,"睛":6,"鼻":6,"锻":6,"炼":6,"朵":6,"健":6,"脚":6,"脸":6,"嘴":6,"闻":6,"篮":6,"踢":6,"足":6,"泳":6,"赛":6,"故":6,"画":6,"环":6,"境":6,"鸟":6,"爬":6,"树":6,"育":6,"熊":6,"猫":6,"戏":6,"云":6,"聪":6,"哭":6,"满":6,"搬":6,"讲":6,"举":6,"响":6,"愿":6,"注":6,"矮":6,"短":6,"旧":6,"胖":6,"奇":6,"瘦":6,"般":6,"它":6,"必":6,"须":6,"层":6,"根":6,"乎":6,"突":6,"直":6,"狗":6,"丶":6,"丨":6,"丿":6,"江":6,"亅":6,"乛":6,"乚":6,"川":6,"亻":6,"氵":6,"扌":6,"林":6,"忄":6,"讠":6,"艹":6,"钅":6,"饣":6,"纟":6,"宀":6,"辶":6,"轮":6,"衤":6,"王":6};
+function hk(s){let a=0x811c9dc5,b=0x01000193^0x5bd1e995;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,16777619)>>>0;b=Math.imul(b^c,0x01000193+2)>>>0}return a.toString(36)+b.toString(36)}const ACHUNKS={"zh": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86], "de": [87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160], "th": [210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230], "en": [161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209]};
+const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+const ICON_SLOW='<svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5A6.5 6.5 0 1 1 18.5 12 6.5 6.5 0 0 1 12 18.5zM12.8 8h-1.6v5l4.2 2.5.8-1.3-3.4-2z"/></svg>';
+/* Koel — mascot of Koel. Original character: a red speech bubble with a face. */
+const PK_CSS=`
+.pk{display:block;overflow:visible}
+.pk *{transform-box:fill-box}
+.pk .all{transform-origin:50% 100%}
+.pk .eyes{transform-origin:50% 50%}
+.pk .pup{transition:transform .3s}
+.pk .arm{transform-origin:var(--ox) var(--oy);transform-box:view-box}
+.pk.idle .all{animation:pk-bob 2.4s ease-in-out infinite}
+.pk .eyes{animation:pk-blink 4.8s infinite}
+.pk.talk .all{animation:pk-bob 1.2s ease-in-out infinite}
+.pk.talk .mouth-o{animation:pk-talk .3s ease-in-out infinite alternate;transform-origin:50% 50%}
+.pk.happy .all{animation:pk-jump .8s cubic-bezier(.3,1.6,.5,1) infinite}
+.pk.happy .armL{animation:pk-waveL .4s ease-in-out infinite alternate}
+.pk.happy .armR{animation:pk-waveR .4s ease-in-out infinite alternate}
+.pk.happy .spark{animation:pk-spark .8s ease-out infinite}
+.pk.oops .all{animation:pk-shake .6s ease-in-out infinite}
+.pk.oops .drop{animation:pk-drop 1.2s ease-in infinite}
+.pk.think .pup{animation:pk-look 2.4s ease-in-out infinite}
+.pk.think .dots circle{animation:pk-dot 1.2s ease-in-out infinite}
+.pk.think .dots circle:nth-child(2){animation-delay:.2s}.pk.think .dots circle:nth-child(3){animation-delay:.4s}
+.pk.think .all{animation:pk-bob 2.4s ease-in-out infinite}
+.pk.win .all{animation:pk-win 1.2s cubic-bezier(.3,1.4,.5,1) infinite}
+.pk.win .armL{animation:pk-waveL .3s ease-in-out infinite alternate}
+.pk.win .armR{animation:pk-waveR .3s ease-in-out infinite alternate}
+.pk.win .spark{animation:pk-spark 1.2s ease-out infinite}
+.pk.win .spark:nth-of-type(2n){animation-delay:.4s}
+.pk.sleep .all{animation:pk-breathe 2.4s ease-in-out infinite}
+.pk.sleep .z{animation:pk-z 2.4s ease-out infinite}
+.pk.sleep .z:nth-of-type(2){animation-delay:1.2s}
+@keyframes pk-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pk-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.97)}}
+@keyframes pk-blink{0%,90%,100%{transform:scaleY(1)}93%{transform:scaleY(.1)}}
+@keyframes pk-talk{from{transform:scaleY(.35)}to{transform:scaleY(1.1)}}
+@keyframes pk-jump{0%{transform:translateY(0) scale(1.06,.92)}40%{transform:translateY(-26px) scale(.96,1.05)}80%{transform:translateY(0) scale(1.04,.95)}100%{transform:translateY(0) scale(1,1)}}
+@keyframes pk-win{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34px) rotate(-8deg)}60%{transform:translateY(-34px) rotate(8deg)}100%{transform:translateY(0) rotate(0)}}
+@keyframes pk-shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-7px) rotate(-4deg)}75%{transform:translateX(7px) rotate(4deg)}}
+@keyframes pk-waveL{from{transform:rotate(10deg)}to{transform:rotate(-35deg)}}
+@keyframes pk-waveR{from{transform:rotate(-10deg)}to{transform:rotate(35deg)}}
+@keyframes pk-spark{0%{opacity:0;transform:scale(.2)}30%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(.6) translateY(-10px)}}
+@keyframes pk-drop{0%{opacity:0;transform:translateY(-6px)}20%{opacity:1}100%{opacity:0;transform:translateY(16px)}}
+@keyframes pk-look{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,-3px)}60%{transform:translate(5px,-3px)}}
+@keyframes pk-dot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+@keyframes pk-z{0%{opacity:0;transform:translate(0,0) scale(.6)}30%{opacity:1}100%{opacity:0;transform:translate(14px,-26px) scale(1.2)}}
+@media (prefers-reduced-motion:reduce){.pk *{animation:none!important}}
+`;
+/* state: idle | talk | happy | oops | think | win | sleep */
+function mascot(state,size,color){
+  state=state||"idle";size=size||96;const c=color||"#e8483a",dk="#b92f24",ink="#2a1d1b";
+  const up=state==="happy"||state==="win";
+  const star=(x,y,s,f)=>`<path class="spark" style="transform-origin:center" d="M${x} ${y-s}L${x+s*.3} ${y-s*.3}L${x+s} ${y}L${x+s*.3} ${y+s*.3}L${x} ${y+s}L${x-s*.3} ${y+s*.3}L${x-s} ${y}L${x-s*.3} ${y-s*.3}Z" fill="${f}"/>`;
+  let mouth;
+  if(state==="happy"||state==="win")mouth=`<path d="M82 112 Q100 140 118 112 Z" fill="${ink}"/><path d="M90 124 Q100 132 110 124 Q100 120 90 124Z" fill="#ff8a8a"/>`;
+  else if(state==="oops")mouth=`<path d="M86 124 Q93 116 100 122 Q107 128 114 120" fill="none" stroke="${ink}" stroke-width="4.5" stroke-linecap="round"/>`;
+  else if(state==="talk")mouth=`<ellipse class="mouth-o" cx="100" cy="120" rx="11" ry="10" fill="${ink}"/>`;
+  else if(state==="think")mouth=`<path d="M92 121 L108 118" stroke="${ink}" stroke-width="4.5" stroke-linecap="round"/>`;
+  else if(state==="sleep")mouth=`<ellipse cx="100" cy="121" rx="5" ry="4" fill="${ink}"/>`;
+  else mouth=`<path d="M86 114 Q100 130 114 114" fill="none" stroke="${ink}" stroke-width="4.5" stroke-linecap="round"/>`;
+  const eyes=state==="happy"||state==="win"?`<g class="eyes"><path d="M68 92 Q78 78 88 92" fill="none" stroke="${ink}" stroke-width="5" stroke-linecap="round"/><path d="M112 92 Q122 78 132 92" fill="none" stroke="${ink}" stroke-width="5" stroke-linecap="round"/></g>`
+    :state==="sleep"?`<g><path d="M68 90 Q78 98 88 90" fill="none" stroke="${ink}" stroke-width="4.5" stroke-linecap="round"/><path d="M112 90 Q122 98 132 90" fill="none" stroke="${ink}" stroke-width="4.5" stroke-linecap="round"/></g>`
+    :`<g class="eyes"><ellipse cx="78" cy="88" rx="14" ry="16" fill="#fff"/><ellipse cx="122" cy="88" rx="14" ry="16" fill="#fff"/>
+      <g class="pup"><circle cx="${state==="oops"?77:80}" cy="${state==="oops"?92:90}" r="8" fill="${ink}"/><circle cx="${state==="oops"?121:124}" cy="${state==="oops"?92:90}" r="8" fill="${ink}"/><circle cx="83" cy="86" r="2.8" fill="#fff"/><circle cx="127" cy="86" r="2.8" fill="#fff"/></g></g>`;
+  const brows=state==="oops"?`<path d="M66 76 L88 68" stroke="${ink}" stroke-width="4" stroke-linecap="round"/><path d="M134 76 L112 68" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>`
+    :state==="think"?`<path d="M66 70 Q78 64 90 70" fill="none" stroke="${ink}" stroke-width="4" stroke-linecap="round"/><path d="M112 66 Q124 62 134 66" fill="none" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>`:"";
+  const armL=up?`<path class="arm armL" style="--ox:40px;--oy:104px" d="M40 104 Q22 88 18 64" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`
+    :`<path class="arm armL" style="--ox:40px;--oy:104px" d="M40 104 Q22 112 20 128" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`;
+  const armR=up?`<path class="arm armR" style="--ox:160px;--oy:104px" d="M160 104 Q178 88 182 64" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`
+    :state==="think"?`<path class="arm armR" style="--ox:160px;--oy:104px" d="M160 108 Q170 128 140 132" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`
+    :`<path class="arm armR" style="--ox:160px;--oy:104px" d="M160 104 Q178 112 180 128" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/>`;
+  const extra=state==="happy"?star(28,40,10,"#ffc83d")+star(172,36,12,"#ffc83d")+star(178,92,7,"#7cc6ff")
+    :state==="win"?star(24,34,12,"#ffc83d")+star(176,30,14,"#ffc83d")+star(186,96,8,"#7cc6ff")+star(14,98,8,"#8be0a4")+star(100,8,9,"#ff8ad1")
+    :state==="oops"?`<path class="drop" d="M150 52 Q158 64 150 70 Q142 64 150 52Z" fill="#7cc6ff"/>`
+    :state==="think"?`<g class="dots"><circle cx="160" cy="34" r="5" fill="#9a9389"/><circle cx="174" cy="24" r="6" fill="#9a9389"/><circle cx="190" cy="12" r="7" fill="#9a9389"/></g>`
+    :state==="sleep"?`<text class="z" x="150" y="50" font-size="20" font-weight="800" fill="#9a9389" font-family="sans-serif">z</text><text class="z" x="160" y="40" font-size="16" font-weight="800" fill="#9a9389" font-family="sans-serif">z</text>`:"";
+  return`<svg class="pk ${state}" width="${size}" height="${size}" viewBox="0 0 200 200" aria-hidden="true">
+  <ellipse cx="100" cy="190" rx="48" ry="6" fill="#000" opacity=".08"/>
+  <g class="all">${armL}${armR}
+    <path d="M100 32 C150 32 172 56 172 98 C172 140 148 160 106 160 L94 160 L70 184 L74 158 C44 152 28 132 28 98 C28 56 50 32 100 32Z" fill="${c}"/>
+    <path d="M40 120 C52 148 80 158 120 156 C150 152 166 136 170 112 C160 140 120 150 92 146 C66 142 48 134 40 120Z" fill="${dk}" opacity=".35"/>
+    <ellipse cx="70" cy="52" rx="16" ry="8" fill="#fff" opacity=".25" transform="rotate(-20 70 52)"/>
+    ${brows}${eyes}
+    <ellipse cx="60" cy="110" rx="9" ry="6" fill="#ff9a8a" opacity=".7"/><ellipse cx="140" cy="110" rx="9" ry="6" fill="#ff9a8a" opacity=".7"/>
+    ${mouth}
+  </g>${extra}</svg>`;
+}
+
+document.head.insertAdjacentHTML("beforeend","<style>"+PK_CSS+".pkrow{display:flex;justify-content:center}</style>");
+const LANGS=["zh","de","en","fr","th"];
+const isVocab=g=>(DATA[lang].vocab||[]).includes(g);
+const REG={polite:"สุภาพ",casual:"กันเอง",work:"ใช้ทำงาน"};
+const LNAME={zh:"Mandarin Chinese (simplified characters)",de:"German",en:"English",fr:"French",th:"Thai"};
+let regF="all";
+const SXN={m:"👨 man speaking",f:"👩 woman speaking"};
+const regTag=c=>(c.reg&&REG[c.reg]?`<span class="reg ${c.reg}">${REG[c.reg]}</span>`:"")+(c.sx&&SXN[c.sx]?`<span class="reg sx-${c.sx}">${SXN[c.sx]}</span>`:"");
+const PLANS={3:{n:10,xp:120,min:20,label:"เร่งรัด"},6:{n:5,xp:60,min:10,label:"สบาย ๆ"}};
+const INT=[0,1,3,7,16,35,80], DAY=864e5;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+const today=()=>dayKey(Date.now());
+
+/* ---------- state ---------- */
+let lang="zh", tab="today", libTopic=null, libAdd=false;
+function blankLang(){return{cards:{},custom:[],goal:null,streak:0,lastDay:null,newDay:null,newCount:0,xpDay:null,xp:0,xpTotal:0,pri:null,tests:[],log:{}}}
+let store={zh:blankLang(),de:blankLang(),en:blankLang(),fr:blankLang(),th:blankLang(),updated:0};
+const LS="phrase-app-v2";
+function norm(o){const r={zh:blankLang(),de:blankLang(),en:blankLang(),fr:blankLang(),th:blankLang(),updated:(o&&o.updated)||0};if(o)for(const k of LANGS)r[k]=Object.assign(blankLang(),o[k]||{});return r}
+/* merge two copies so nothing learned on any device is lost */
+function merge(a,b){
+  a=norm(a);b=norm(b);const r=norm(null);
+  for(const k of LANGS){const x=a[k],y=b[k],z=r[k];
+    for(const id of new Set([...Object.keys(x.cards),...Object.keys(y.cards)])){const p=x.cards[id],q=y.cards[id];z.cards[id]=!p?q:!q?p:((q.b>p.b||(q.b===p.b&&q.d>p.d))?q:p);
+      if(p&&q){const kk=(p.ku||0)>=(q.ku||0)?p:q;if(kk.ku)z.cards[id]=Object.assign({},z.cards[id],{k:kk.k,ku:kk.ku})}}
+    const cm={};for(const c of[...x.custom,...y.custom])cm[c.id]=c;z.custom=Object.values(cm);
+    const newer=(y.lastDay&&(!x.lastDay||new Date(y.lastDay)>new Date(x.lastDay)))?y:x;
+    z.goal=x.goal&&y.goal?(x.goal.start<=y.goal.start?Object.assign({},y.goal,{start:x.goal.start}):Object.assign({},x.goal,{start:y.goal.start})):(x.goal||y.goal);
+    z.streak=Math.max(newer.streak||0,0);z.lastDay=newer.lastDay;
+    z.xpTotal=Math.max(x.xpTotal||0,y.xpTotal||0);
+    if(x.xpDay===y.xpDay){z.xpDay=x.xpDay;z.xp=Math.max(x.xp,y.xp)}else{const n=(new Date(y.xpDay||0)>new Date(x.xpDay||0))?y:x;z.xpDay=n.xpDay;z.xp=n.xp}
+    if(x.newDay===y.newDay){z.newDay=x.newDay;z.newCount=Math.max(x.newCount,y.newCount)}else{const n=(new Date(y.newDay||0)>new Date(x.newDay||0))?y:x;z.newDay=n.newDay;z.newCount=n.newCount}
+    z.pri=(a.updated>=b.updated?x:y).pri;if(x.sx||y.sx)z.sx=(a.updated>=b.updated?x:y).sx||x.sx||y.sx;
+    const tm={};for(const t of[...(x.tests||[]),...(y.tests||[])])tm[t.d]=t;z.tests=Object.values(tm).sort((p,q)=>p.d-q.d).slice(-40);
+    z.log={};for(const L of[x.log||{},y.log||{}])for(const[k2,v2]of Object.entries(L))z.log[k2]=Math.max(z.log[k2]||0,v2);
+  }
+  r.updated=Math.max(a.updated,b.updated);return r;
+}
+try{const o=JSON.parse(localStorage.getItem(LS)||"null");if(o)store=norm(o)}catch(e){}
+try{const bk=JSON.parse(localStorage.getItem(LS+"-bak")||"null");if(bk)store=merge(store,bk)}catch(e){}
+try{const l=localStorage.getItem(LS+"-lang");if(["de","en","fr","th"].includes(l))lang=l}catch(e){}
+const S=()=>store[lang];
+let dbDoc=null,dbVer=0,saveT=null,syncState="local",pending=false;
+function setSync(s){syncState=s;const el=document.getElementById("sync");if(!el)return;
+  el.textContent={local:"บันทึกในเครื่องนี้แล้ว · ย้ายเครื่องใช้รหัสสำรองในหน้าวันนี้",saving:"กำลังบันทึก…",ok:"บันทึกในบัญชีแล้ว เปิดเครื่องไหนก็เรียนต่อได้",err:"ยังบันทึกขึ้นบัญชีไม่สำเร็จ ข้อมูลยังอยู่ในเครื่องนี้ จะลองใหม่อัตโนมัติ"}[s]}
+function save(){
+  store.updated=Date.now();
+  try{const j=JSON.stringify(store);localStorage.setItem(LS,j);localStorage.setItem(LS+"-bak",j)}catch(e){}
+  if(dbDoc){pending=true;setSync("saving");clearTimeout(saveT);saveT=setTimeout(push,400)}
+}
+async function push(){
+  if(!dbDoc||!pending)return;pending=false;
+  try{const snap=await dbDoc.get();if(snap.exists){const o=JSON.parse(snap.data().json||"{}");if((o.updated||0)>0)store=merge(store,o)}
+    await dbDoc.set({json:JSON.stringify(store),updated:store.updated});
+    try{localStorage.setItem(LS,JSON.stringify(store))}catch(e){}
+    setSync("ok")}
+  catch(e){pending=true;setSync("err");clearTimeout(saveT);saveT=setTimeout(push,8000)}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){clearTimeout(saveT);push()}});
+addEventListener("pagehide",()=>{if(pending){clearTimeout(saveT);push()}});
+(async()=>{try{
+  if(!window.claude)return;
+  const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+  if(!db||!user)return;const id=await user.id();if(!id)return;
+  dbDoc=db.collection("data/users/"+id).doc("progress");
+  const snap=await dbDoc.get();
+  if(snap.exists){const o=JSON.parse(snap.data().json||"{}");store=merge(store,o);try{localStorage.setItem(LS,JSON.stringify(store))}catch(e){}
+    if(!$("#study")||$("#study").hidden)render()}
+  pending=true;await push();
+}catch(e){setSync("local")}})();
+let toastT;function toast(m){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- deck ---------- */
+function topics(){const t=Object.assign({},DATA[lang].topics);if(S().custom.length)t.mine="ประโยคของฉัน";return t}
+function deck(){const pf=lang==="th"?S().sx:null;return DATA[lang].cards.filter(c=>!pf||pf==="both"||!c.sx||c.sx===pf).concat(S().custom.map(c=>Object.assign({g:"mine"},c)))}
+const st=id=>S().cards[id];
+function unseenOrdered(){
+  const order=Object.keys(topics()),pri=S().pri;
+  return deck().filter(c=>!st(c.id)).sort((a,b)=>{
+    const pa=a.g===pri?-1:order.indexOf(a.g),pb=b.g===pri?-1:order.indexOf(b.g);return pa-pb});
+}
+function due(){const n=Date.now();return deck().filter(c=>{const s=st(c.id);return s&&!s.k&&s.d<=n}).sort((a,b)=>st(a.id).d-st(b.id).d)}
+function plan(){return PLANS[(S().goal||{}).m||6]}
+function newLeft(){const s=S();if(s.newDay!==today()){s.newDay=today();s.newCount=0}return Math.max(0,plan().n-s.newCount)}
+function xpToday(){const s=S();if(s.xpDay!==today()){s.xpDay=today();s.xp=0}return s.xp}
+function addXP(n){xpToday();const s=S();s.xp+=n;s.xpTotal=(s.xpTotal||0)+n;s.log=s.log||{};s.log[today()]=(s.log[today()]||0)+n}
+function streakNow(){const s=S();return(s.lastDay===today()||s.lastDay===dayKey(Date.now()-DAY))?s.streak:0}
+function bump(){const s=S(),t=today();if(s.lastDay===t)return;s.streak=s.lastDay===dayKey(Date.now()-DAY)?s.streak+1:1;s.lastDay=t}
+function nextFor(s,g){
+  const b=s?s.b:0;
+  if(g===0)return{b:Math.max(0,b-2),d:Date.now()+60e3};
+  if(g===1){const nb=Math.max(1,b);return{b:nb,d:Date.now()+Math.max(1,INT[nb]*.5)*DAY}}
+  const nb=Math.min(INT.length-1,b+1);return{b:nb,d:Date.now()+INT[nb]*DAY};
+}
+const lbl=t=>{const d=Math.round((t-Date.now())/DAY);return d<1?"อีกสักครู่":d+" วัน"};
+function topicCards(g){if(g==="known")return deck().filter(c=>(st(c.id)||{}).k);if(g.startsWith("sx:"))return DATA[lang].cards.filter(c=>c.sx===g.slice(3));if(g.startsWith("reg:"))return deck().filter(c=>c.reg===g.slice(4));return deck().filter(c=>c.g===g)}
+function topicName(g){if(g==="known")return"การ์ดที่จำได้แล้ว";if(g.startsWith("sx:"))return g==="sx:m"?"Spoken by men (ครับ ผม)":"Spoken by women (ค่ะ คะ ฉัน)";if(g.startsWith("reg:"))return"ประโยค"+REG[g.slice(4)];return topics()[g]||g}
+function isKnown(id){return!!(st(id)||{}).k}
+function toggleKnown(id){const s=S(),o=s.cards[id];
+  if(o&&o.k){s.cards[id]=Object.assign({},o,{k:0,ku:Date.now()})}
+  else{const n=Object.assign({b:0,d:Date.now(),l:0},o||{},{k:1,ku:Date.now()});n.b=Math.max(n.b,4);n.d=Date.now()+INT[4]*DAY;s.cards[id]=n;bump()}
+  save();return isKnown(id)}
+const knownBtn=(c,mini)=>mini?`<button class="mini" data-known="${esc(c.id)}" aria-pressed="${isKnown(c.id)}" aria-label="จำได้แล้ว" title="จำได้แล้ว">✓</button>`:`<button class="knownbtn" data-known="${esc(c.id)}" aria-pressed="${isKnown(c.id)}">${isKnown(c.id)?"✓ อยู่ในกองจำได้แล้ว":"จำได้แล้ว เก็บเข้ากอง"}</button>`;
+document.addEventListener("click",e=>{const z=e.target.closest("[data-hz]");if(z){e.stopPropagation();openHanzi(z.dataset.hz)}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-known]");if(!b)return;e.stopPropagation();const k=toggleKnown(b.dataset.known);
+  document.querySelectorAll('[data-known="'+CSS.escape(b.dataset.known)+'"]').forEach(x=>{x.setAttribute("aria-pressed",k);if(x.classList.contains("knownbtn"))x.textContent=k?"✓ อยู่ในกองจำได้แล้ว":"จำได้แล้ว เก็บเข้ากอง"});
+  toast(k?"เก็บเข้ากอง \"จำได้แล้ว\" จะไม่ถูกเรียกมาทวนรายวัน แต่ยังอยู่ในเกม":"เอาออกจากกองจำได้แล้ว")});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-sxp]");if(!b)return;S().sx=b.dataset.sxp;save();render();toast(b.dataset.sxp==="both"?"You will study both styles":"Daily lessons now use the "+(b.dataset.sxp==="m"?"men's":"women's")+" style")});
+function topicStats(g){const cs=topicCards(g);const seen=cs.filter(c=>st(c.id)).length;const known=cs.filter(c=>(st(c.id)||{}).b>=2).length;return{n:cs.length,seen,known}}
+
+/* ---------- speech ---------- */
+const hasTTS=true;
+const player=new Audio();player.preload="auto";
+let voices=[];const webTTS="speechSynthesis" in window;
+function lv(){try{voices=speechSynthesis.getVoices()}catch(e){}}
+if(webTTS){lv();try{speechSynthesis.onvoiceschanged=lv}catch(e){}}
+const SILENT="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//NwwAAAAAAAAAAAAEluZm8AAAAPAAAACAAAA/oAR0dHR0dHR0dHR0dHYmJiYmJiYmJiYmJifHx8fHx8fHx8fHx8fJaWlpaWlpaWlpaWlrGxsbGxsbGxsbGxsbHLy8vLy8vLy8vLy8vl5eXl5eXl5eXl5eXl////////////////AAAAAExhdmM2MC4zMQAAAAAAAAAAAAAAACQC1AAAAAAAAAP6yysejgAAAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NCxKMAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NAxKQAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80LEowAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80DEpAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsSjAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";let unlocked=false;
+function unlockAudio(){if(unlocked)return;unlocked=true;try{player.src=SILENT;const p=player.play();if(p&&p.catch)p.catch(()=>{unlocked=false})}catch(e){unlocked=false}}
+document.addEventListener("pointerdown",unlockAudio,{capture:true});document.addEventListener("touchend",unlockAudio,{capture:true});
+function playSrc(src,t,slow){try{player.pause();player.src=src;player.playbackRate=slow?.7:1;player.preservesPitch=true;player.webkitPreservesPitch=true;
+  const p=player.play();if(p&&p.catch)p.catch(()=>webSpeak(t,slow))}catch(e){webSpeak(t,slow)}}
+let speakTok=0;
+function speak(t,slow){
+  if(!t)return;const tok=++speakTok,key=hk(lang+"|"+t);
+  try{if(webTTS)speechSynthesis.cancel()}catch(e){}
+  if(AUDIO[key])return playSrc(AUDIO[key],t,slow);
+  const i=AIDX[key];
+  if(i==null)return webSpeak(t,slow);
+  loadChunk(i).then(()=>{if(tok!==speakTok)return;if(AUDIO[key])playSrc(AUDIO[key],t,slow);else webSpeak(t,slow)}).catch(()=>{if(tok===speakTok)webSpeak(t,slow)});
+}
+let TSEX=null;
+function sxOf(t){if(lang!=="th")return null;if(!TSEX){TSEX={};for(const c of DATA.th.cards)if(c.sx){TSEX[c.t]=c.sx;if(c.ex)TSEX[c.ex]=c.sx}}
+  if(TSEX[t])return TSEX[t];const s=String(t);return /(ครับ|ผม)/.test(s)?"m":/(ค่ะ|คะ|ดิฉัน)/.test(s)?"f":null}
+const isFemaleV=v=>/female|woman|kanya|premwadee|narisa|achara|pattara|หญิง/i.test(v.name||"");
+const isMaleV=v=>!isFemaleV(v)&&/\bmale\b|\bman\b|niwat|ชาย/i.test(v.name||"");
+function webSpeak(t,slow){
+  if(!webTTS){toast("เครื่องนี้ไม่มีเสียงอ่านสำหรับประโยคนี้");return}
+  const code=DATA[lang].voice;
+  const u=new SpeechSynthesisUtterance(String(t).replace(/……|…|\.\.\./g," "));u.lang=code;u.rate=slow?.6:.95;
+  let v=voices.find(v=>(v.lang||"").replace("_","-").startsWith(code))||voices.find(v=>(v.lang||"").startsWith(code.slice(0,2)));
+  const sx=sxOf(t);
+  if(sx){const th=voices.filter(x=>(x.lang||"").toLowerCase().startsWith("th")),hit=th.find(sx==="m"?isMaleV:isFemaleV);
+    if(hit)v=hit;else if(sx==="m")u.pitch=.55;else if(v&&isMaleV(v))u.pitch=1.4;else u.pitch=1.12}
+  if(v)u.voice=v;
+  try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){}
+}
+function audioBtns(t){if(!hasTTS)return"";return`<div class="audio"><button class="play" data-say="${esc(t)}">${ICON_PLAY} ฟัง</button><button class="play" data-say="${esc(t)}" data-slow="1">${ICON_SLOW} ช้า</button></div>`}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-say]");if(b){e.stopPropagation();speak(b.dataset.say,!!b.dataset.slow)}});
+
+/* ---------- views ---------- */
+function render(){
+  if(!DATA)return;
+  document.body.dataset.lang=lang;if(!$("#seal svg"))$("#seal").innerHTML=mascot("idle",44);
+  $("#sub").textContent="เรียน"+DATA[lang].name+" "+(S().goal?"เป้าหมาย "+S().goal.m+" เดือน":"ประโยคที่ใช้คุยได้จริง");
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  loadAudio(lang);
+  if(tab==="chat")tab="today";
+  ({today:viewToday,lib:viewLib,alpha:viewAlpha,game:viewGame})[tab]();
+}
+function goalPicker(current){
+  return`<div class="panel" style="display:flex;flex-direction:column;gap:12px">
+    <div class="pkrow">${mascot("idle",100)}</div><div><h2>อยากคุย${DATA[lang].name}ได้ภายในกี่เดือน</h2><p class="hint">แอปจะจัดจำนวนประโยคใหม่ต่อวันให้พอดีกับเป้าหมาย เปลี่ยนทีหลังได้ตลอด</p></div>
+    <div class="goals">${[3,6].map(m=>{const p=PLANS[m];return`<button class="goal" data-goal="${m}" aria-pressed="${current===m}"><b>${m}</b><span>เดือน · ${p.label}</span><small>ใหม่วันละ ${p.n} ประโยค<br>ราว ${p.min} นาทีต่อวัน</small></button>`}).join("")}</div>
+  </div>`;
+}
+function weak(){return deck().filter(c=>(st(c.id)||{}).l>0).sort((x,y)=>st(y.id).l-st(x.id).l).slice(0,12)}
+function weekChart(){
+  const s=S(),days=[];for(let i=6;i>=0;i--){const t=Date.now()-i*DAY;days.push({k:dayKey(t),lab:new Date(t).toLocaleDateString("th-TH",{weekday:"narrow"})})}
+  const vals=days.map(d=>(s.log||{})[d.k]||0),mx=Math.max(plan().xp,...vals);
+  return`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:96px">${days.map((d,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span style="font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${vals[i]||""}</span><div style="width:100%;max-width:28px;border-radius:6px 6px 2px 2px;background:${vals[i]>=plan().xp?"var(--good)":vals[i]?"var(--xp)":"var(--soft)"};height:${Math.max(4,Math.round(vals[i]/mx*60))}px"></div><span style="font-size:11.5px;color:${i===6?"var(--ink)":"var(--muted)"};font-weight:${i===6?700:400}">${d.lab}</span></div>`).join("")}</div>`;
+}
+function alertsHTML(dc,learned,behind,p){
+  const s=S(),T_=topics(),out=[],h=new Date().getHours(),st_=streakNow();
+  if(s.lastDay!==today()&&st_>0&&h>=18)out.push(["warn","วันนี้ยังไม่ได้เรียน ไฟต่อเนื่อง "+st_+" วันจะดับตอนเที่ยงคืน เรียนแค่รอบเดียวก็รักษาไว้ได้"]);
+  if(dc)out.push(["warn","มี "+dc+" ประโยคถึงรอบทบทวน ทวนวันนี้สมองจะจำได้นานขึ้นอีกหลายวัน"]);
+  if(behind>p.n)out.push(["warn","ตามหลังแผน "+behind+" ประโยค ลองกด \"เรียนเพิ่มอีก 5 ประโยค\" หลังจบรอบ"]);
+  for(const g of Object.keys(T_)){const t=topicStats(g);if(t.n&&t.seen===t.n){const b=(s.tests||[]).filter(x=>x.title==="สอบท้ายบท: "+T_[g]);if(!b.length||Math.max(...b.map(x=>x.pct))<75){out.push(["ok","เรียนครบ \""+T_[g]+"\" แล้ว ไปสอบท้ายบทในแท็บสถานการณ์ได้เลย"]);break}}}
+  if([3,7,14,21,30,60,90].includes(st_)&&s.lastDay===today())out.push(["ok","เรียนต่อเนื่องครบ "+st_+" วันแล้ว เก่งมาก"]);
+  if(learned&&learned%25<p.n&&learned>=25)out.push(["ok","เรียนไปแล้ว "+learned+" ประโยค ใกล้คุยได้จริงขึ้นทุกวัน"]);
+  const lt=(s.tests||[]).slice(-1)[0];if(lt&&Date.now()-lt.d<2*DAY)out.push([lt.pct>=75?"ok":"warn","ผลทดสอบล่าสุด "+lt.pct+"% ("+lt.title+")"+(lt.pct<75?" ลองทบทวนประโยคที่พลาดบ่อย":"")]);
+  let inst=false;try{inst=!localStorage.getItem(LS+"-inst")}catch(e){}
+  if(!out.length&&!inst)return"";
+  return`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>แจ้งเตือนความคืบหน้า</h2>
+    ${out.slice(0,4).map(([k,m])=>`<div class="row-flex" style="align-items:flex-start;gap:10px"><span style="width:10px;height:10px;border-radius:50%;margin-top:7px;flex:none;background:var(--${k==="ok"?"good":"hard"})"></span><span style="font-size:14.5px">${esc(m)}</span></div>`).join("")}
+    ${inst?`<div class="tip" style="display:flex;flex-direction:column;gap:6px"><b>เปิดเหมือนแอปจากหน้าจอโฮม</b><span>ใน Safari กดปุ่มแชร์ (สี่เหลี่ยมมีลูกศรขึ้น) แล้วเลือก "เพิ่มไปยังหน้าจอโฮม" แล้วกดเพิ่ม จะได้ไอคอนแอปบนหน้าจอโฮม</span><button class="link" id="install-x" style="align-self:flex-start">ทำแล้ว ซ่อนข้อความนี้</button></div>`:""}
+  </div>`;
+}
+function bindGoal(root){root.querySelectorAll("[data-goal]").forEach(b=>b.onclick=()=>{const m=+b.dataset.goal;const s=S();s.goal={m,start:(s.goal&&s.goal.start)||Date.now()};save();editGoal=false;render()})}
+let editGoal=false;
+function viewToday(){
+  const v=$("#view"),s=S(),L=DATA[lang];
+  if(!s.goal||editGoal){v.innerHTML=goalPicker(s.goal&&s.goal.m)+(s.goal?`<div style="height:10px"></div><button class="ghost" id="cancel-goal">ยกเลิก</button>`:"");bindGoal(v);const c=$("#cancel-goal");if(c)c.onclick=()=>{editGoal=false;render()};return}
+  const p=plan(),xp=xpToday(),nl=Math.min(newLeft(),unseenOrdered().length),dc=due().length;
+  const all=deck(),learned=all.filter(c=>st(c.id)).length,total=all.length;
+  const dayN=Math.floor((Date.now()-s.goal.start)/DAY)+1,days=s.goal.m*30;
+  const expected=Math.min(total,dayN*p.n),behind=expected-learned;
+  const finishDays=Math.ceil((total-learned)/p.n);
+  const pct=Math.min(1,xp/p.xp),R=40,C=2*Math.PI*R;
+  const order=Object.keys(topics());let nowIdx=order.findIndex(g=>{const t=topicStats(g);return t.seen<t.n});
+  v.innerHTML=`
+  <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+    <div class="hero">
+      <div class="ring" aria-label="XP วันนี้ ${xp} จาก ${p.xp}"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--soft)" stroke-width="10"/><circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--xp)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}"/></svg>
+        <div class="t"><div><b>${xp}</b><small>/ ${p.xp} XP</small></div></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        ${mascot(xp>=p.xp?"win":(nl+dc)?"idle":"sleep",64)}
+        <div style="font-weight:700;font-size:17px">${xp>=p.xp?"ครบเป้าวันนี้แล้ว เก่งมาก":dc+nl?"วันนี้มี "+(nl?nl+" ประโยคใหม่":"")+(nl&&dc?" กับ ":"")+(dc?"ทบทวน "+dc:""):"วันนี้เรียนครบแล้ว"}</div>
+        <div class="hint">ราว ${Math.max(2,Math.round(nl*1.2+dc*.3))} นาที เรียนทุกวันวันละนิด สมองจำได้ดีกว่าเรียนรวดเดียว</div>
+      </div>
+    </div>
+    <button class="primary" id="start" ${nl+dc?"":"disabled"}>${nl+dc?"เริ่มเลย":"พรุ่งนี้มาต่อนะ"}</button>
+    ${!(nl+dc)?`<button class="ghost" id="extra">เรียนเพิ่มอีก 5 ประโยค</button>`:""}
+    <div class="stats3">
+      <div class="st"><b class="flame">${streakNow()}</b><small>วันติดต่อกัน</small></div>
+      <div class="st"><b>${learned}</b><small>ประโยคที่เรียนแล้ว</small></div>
+      <div class="st"><b>${s.xpTotal||0}</b><small>XP สะสม</small></div>
+    </div>
+  </div>
+  ${lang==="th"&&!S().sx?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>Do you speak as a man or a woman?</h2><p class="hint">Thai sentences end differently: men say ครับ khrap and ผม phom, women say ค่ะ / คะ kha and ฉัน chan. Pick yours and daily lessons will use your style. You can change it in the Situations tab.</p><div class="filters"><button data-sxp="m">👨 Man</button><button data-sxp="f">👩 Woman</button><button data-sxp="both">Both</button></div></div>`:""}
+  ${alertsHTML(dc,learned,behind,p)}
+  <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+    <div class="row-flex" style="justify-content:space-between"><h2>ทบทวน & ทดสอบ</h2><span class="hint">XP 7 วันล่าสุด</span></div>
+    ${weekChart()}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="ghost" id="r-test">เกมทดสอบรวม 10 ข้อ</button>
+      <button class="ghost" id="r-weak" ${weak().length?"":"disabled"}>ประโยคที่พลาดบ่อย${weak().length?" ("+weak().length+")":""}</button>
+    </div>
+    ${learned<4?`<p class="hint">ยังเรียนไม่ถึง 4 ประโยค เกมจะสุ่มประโยคพื้นฐานมาให้ลองก่อน</p>`:""}
+    ${(s.tests||[]).length?`<div class="list">${s.tests.slice(-3).reverse().map(t=>`<div class="item" style="grid-template-columns:1fr auto"><div class="m" style="font-weight:600">${esc(t.title)}</div><div class="side" style="grid-row:1 / span 2"><span class="chip ${t.pct>=75?"ok":"warn"}">${t.pct}%</span></div><div class="s">${new Date(t.d).toLocaleDateString("th-TH",{day:"numeric",month:"short"})} · ${t.n} ข้อ · ${t.score} คะแนน</div></div>`).join("")}</div>`:""}
+  </div>
+  <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+    <div class="row-flex" style="justify-content:space-between;flex-wrap:wrap">
+      <h2>เป้าหมาย ${s.goal.m} เดือน · วันที่ ${Math.min(dayN,days)} จาก ${days}</h2>
+      ${behind>p.n?`<span class="chip warn">ตามหลังแผน ${behind} ประโยค</span>`:`<span class="chip ok">ตามแผน</span>`}
+    </div>
+    <div class="bar"><i style="width:${total?Math.round(learned/total*100):0}%"></i></div>
+    <p class="hint">เรียนแล้ว ${learned} จาก ${total} ประโยค ${learned<total?"· ด้วยจังหวะนี้จะครบคลังในอีกราว "+finishDays+" วัน":"· ครบคลังแล้ว เพิ่มประโยคของคุณเองได้ในแท็บสถานการณ์"}</p>
+    <button class="link" id="chg-goal" style="align-self:flex-start">เปลี่ยนเป้าหมาย</button>
+  </div>
+  <div class="panel">
+    <h2 style="margin-bottom:6px">เส้นทางของคุณ</h2>
+    <div class="path">${order.map((g,i)=>{const t=topicStats(g);const done=t.n&&t.seen===t.n;const cls=done?"done":i===nowIdx?"now":"";
+      return`<button class="node ${cls}" data-topic="${g}"><span class="dot">${done?"✓":i+1}</span><span class="nm">${esc(topics()[g])}<small>${isVocab(g)?"คำศัพท์":"สถานการณ์"} · ${t.n} รายการ${i===nowIdx?" · กำลังเรียน":""}</small></span><span class="pc">${t.n?Math.round(t.seen/t.n*100):0}%</span></button>`}).join("")}</div>
+  </div>
+  <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+    <h2>สำรองข้อมูล</h2>
+    <p class="hint">ความคืบหน้าบันทึกอัตโนมัติทุกครั้งที่ตอบ ถ้าอยากเก็บสำรองอีกชั้น กดคัดลอกรหัสแล้ววางเก็บในโน้ต ย้ายเครื่องหรือข้อมูลหายก็วางกลับมาได้</p>
+    <div class="row-flex" style="flex-wrap:wrap"><button class="ghost" id="bk-copy">คัดลอกรหัสสำรอง</button><button class="ghost" id="bk-open">กู้คืนจากรหัส</button></div>
+    <div id="bk-area" hidden><textarea id="bk-text" rows="3" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card);color:var(--ink);font:400 13px monospace;box-sizing:border-box"></textarea><button class="primary" id="bk-go" style="margin-top:8px">กู้คืน (รวมกับข้อมูลเดิม ไม่ลบอะไร)</button></div>
+  </div>`;
+  $("#start").onclick=()=>startSession();
+  $("#r-test").onclick=()=>startTest(mixedPool(),"ทดสอบรวม");
+  $("#r-weak").onclick=()=>startSession(weak());
+  $("#bk-copy").onclick=async()=>{const code="PUDDAI1:"+btoa(unescape(encodeURIComponent(JSON.stringify(store))));
+    try{await navigator.clipboard.writeText(code);toast("คัดลอกรหัสสำรองแล้ว วางเก็บในโน้ตได้เลย")}catch(e){$("#bk-area").hidden=false;$("#bk-text").value=code;$("#bk-text").select();toast("กดค้างที่ช่องแล้วเลือกคัดลอก")}};
+  $("#bk-open").onclick=()=>{$("#bk-area").hidden=false;$("#bk-text").value="";$("#bk-text").focus()};
+  $("#bk-go").onclick=()=>{try{const v=$("#bk-text").value.trim().replace(/^PUDDAI1:/,"");const o=JSON.parse(decodeURIComponent(escape(atob(v))));store=merge(store,o);save();toast("กู้คืนแล้ว");render()}catch(e){toast("รหัสไม่ถูกต้อง ลองคัดลอกใหม่ทั้งหมด")}};
+  const ex=$("#extra");if(ex)ex.onclick=()=>{S().newCount-=5;save();startSession()};
+  const ib=$("#install-x");if(ib)ib.onclick=()=>{try{localStorage.setItem(LS+"-inst","1")}catch(e){};render()};
+  $("#chg-goal").onclick=()=>{editGoal=true;render()};
+  v.querySelectorAll("[data-topic]").forEach(b=>b.onclick=()=>{libTopic=b.dataset.topic;tab="lib";render();scrollTo(0,0)});
+}
+function itemHTML(c){const b=(st(c.id)||{b:-1}).b;return`<div class="item"><div class="t han">${esc(c.t)}</div>
+        <div class="side"><button class="iconbtn" aria-label="ฟัง" data-say="${esc(c.t)}">${ICON_PLAY}</button><span class="lvl" title="${b<0?"ยังไม่เรียน":"ระดับ "+b}">${[1,2,3,4,5].map(i=>`<i class="${b>=i?"on":""}"></i>`).join("")}</span>${c.g!=="mine"?knownBtn(c,true):""}</div>
+        <div class="s"><em>${esc(c.r)}</em>${c.p?" · "+esc(c.p):""}</div><div class="m">${esc(c.m)}${regTag(c)}</div>
+        ${c.ex?`<div class="e"><span class="han">${esc(c.ex)}</span>${c.exr?" <em style=\"font-style:normal;font-family:var(--f-lat)\">"+esc(c.exr)+"</em>":""} ${esc(c.exm)}</div>`:""}${c.n?`<div class="e">${esc(c.n)}</div>`:""}</div>`}
+function regFilters(cs){const has=k=>cs.some(c=>c.reg===k);const ks=Object.keys(REG).filter(has);if(!ks.length)return"";
+  return`<div class="filters" role="group" aria-label="กรองตามระดับภาษา"><button data-rf="all" aria-pressed="${regF==="all"}">ทั้งหมด</button>${ks.map(k=>`<button data-rf="${k}" aria-pressed="${regF===k}">${REG[k]}</button>`).join("")}</div>`}
+function viewLib(){
+  const v=$("#view"),T=topics();
+  if(libAdd)return viewAdd();
+  if(libTopic&&(T[libTopic]||libTopic==="known"||libTopic.startsWith("reg:")||libTopic.startsWith("sx:"))){
+    const g=libTopic,all=topicCards(g),t=topicStats(g),isPri=S().pri===g,name=topicName(g),virt=!T[g];
+    const cs=g.startsWith("reg:")||g.startsWith("sx:")||regF==="all"?all:all.filter(c=>c.reg===regF||(c.reg==="any"||!c.reg));
+    let listHTML;
+    if(virt){const by={};for(const c of cs)(by[c.g]=by[c.g]||[]).push(c);
+      listHTML=Object.keys(T).filter(k=>by[k]).map(k=>`<div class="sec">${esc(T[k])} · ${by[k].length}</div><div class="list">${by[k].map(itemHTML).join("")}</div>`).join("")||`<div class="empty">${g==="known"?"ยังไม่มีการ์ดในกองนี้ กดปุ่ม ✓ ที่การ์ดใบไหนก็ได้เมื่อจำได้แล้ว การ์ดจะถูกแยกมาไว้ที่นี่ตามหมวด":"ยังไม่มีประโยคในหมวดนี้"}</div>`}
+    else listHTML=`<div class="list">${cs.map(itemHTML).join("")}</div>`;
+    const hasGap=all.some(c=>c.gap);
+    v.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+      <div class="back"><button class="x" id="back" aria-label="กลับ">‹</button><h2>${esc(name)}</h2></div>
+      <div class="row-flex" style="justify-content:space-between;flex-wrap:wrap"><span class="hint">${g==="known"?"จำได้แล้ว "+all.length+" ใบ แยกตามหมวด":"เรียนแล้ว "+t.seen+"/"+t.n+" · จำแม่น "+t.known}</span>
+      ${virt?"":`<button class="ghost" id="pri">${isPri?"กำลังเรียนชุดนี้ก่อน":"เรียนชุดนี้ก่อน"}</button>`}</div>
+      ${hasGap?`<button class="primary" id="t-gap">เกมเลือกเติมคำเชื่อม</button>`:SCN[g]?`<button class="primary" id="t-scene">🎬 เล่นสถานการณ์จำลองชุดนี้</button>`:""}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="ghost" id="t-rev" ${t.seen?"":"disabled"}>ทบทวนชุดนี้</button><button class="ghost" id="t-exam" ${t.seen>=4?"":"disabled"}>สอบท้ายบท${best(name)}</button></div>
+      ${t.seen<4&&g!=="known"?`<p class="hint">เรียนในชุดนี้ให้ได้อย่างน้อย 4 ประโยค ถึงจะสอบท้ายบทได้</p>`:""}
+      ${g.startsWith("reg:")||g.startsWith("sx:")?"":regFilters(all)}
+      ${listHTML}</div>`;
+    prefetchTexts(cs.slice(0,40).map(c=>c.t));
+    $("#back").onclick=()=>{libTopic=null;render()};
+    const pb=$("#pri");if(pb)pb.onclick=()=>{S().pri=isPri?null:g;save();render()};
+    const sb=$("#t-scene");if(sb)sb.onclick=()=>startScenes(all,"สถานการณ์จำลอง: "+name);
+    const gb=$("#t-gap");if(gb)gb.onclick=()=>startTest(all.filter(c=>c.gap),"เติมคำเชื่อม",true);
+    v.querySelectorAll("[data-rf]").forEach(b=>b.onclick=()=>{regF=b.dataset.rf;render()});
+    $("#t-rev").onclick=()=>startSession(all.filter(c=>st(c.id)));
+    $("#t-exam").onclick=()=>startTest(all.filter(c=>st(c.id)),"สอบท้ายบท: "+name);
+    return;
+  }
+  const order=Object.keys(T),sit=order.filter(g=>!isVocab(g)&&g!=="mine"),voc=order.filter(g=>isVocab(g)),ic=DATA[lang].icons||{};
+  const tile=(g,icon)=>{const t=topicStats(g);return`<button class="tile${S().pri===g?" pri":""}" data-t="${g}"><span class="ic">${esc(icon||ic[g]||"＊")}</span><b>${esc(topicName(g))}</b><small>${g==="known"?t.n+" ใบ":t.seen+"/"+t.n+" เรียนแล้ว"}</small>${g==="known"?"":`<span class="bar"><i style="width:${t.n?t.seen/t.n*100:0}%"></i></span>`}</button>`};
+  const regIcon={polite:{zh:"您",de:"Sie",en:"Could I",fr:"vous",th:"ครับ/ค่ะ"},casual:{zh:"哈",de:"du",en:"Hey!",fr:"tu",th:"จ้ะ"},work:{zh:"开会",de:"Büro",en:"Meeting",fr:"Réunion",th:"ประชุม"}};
+  const sxPick=lang==="th"?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>My speaking style</h2><p class="hint">Men and women end Thai sentences differently. Pick yours and only those sentences go into your daily lessons.</p><div class="filters" role="group" aria-label="แบบผู้พูด">${[["m","👨 Man (ครับ ผม)"],["f","👩 Woman (ค่ะ คะ ฉัน)"],["both","Both"]].map(([k,l])=>`<button data-sxp="${k}" aria-pressed="${(S().sx||"both")===k}">${l}</button>`).join("")}</div></div>`:"";
+  v.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+    <p class="hint">เริ่มจากสถานการณ์ที่จะได้ใช้จริงก่อน แตะเพื่อดูและฟังทุกประโยค กรองได้ว่าแบบสุภาพ กันเอง หรือใช้ทำงาน</p>${sxPick}
+    <div class="sec">สถานการณ์</div><div class="tiles">${sit.map(g=>tile(g)).join("")}</div>
+    <div class="sec">แยกตามระดับภาษา</div><div class="tiles">${Object.keys(REG).filter(k=>DATA[lang].cards.some(c=>c.reg===k)).map(k=>tile("reg:"+k,regIcon[k][lang])).join("")}</div>
+    ${lang==="th"?`<div class="sec">By speaker</div><div class="tiles">${tile("sx:m","👨")}${tile("sx:f","👩")}</div>`:""}
+    ${voc.length?`<div class="sec">คำศัพท์${lang==="de"?" (Goethe A1)":""}</div><div class="tiles">${voc.map(g=>tile(g)).join("")}</div>`:""}
+    <div class="sec">ของฉัน</div><div class="tiles">${tile("known","✓")}${T.mine?tile("mine","＋"):""}<button class="tile" id="add"><span class="ic">＋</span><b>เพิ่มประโยคเอง</b><small>เจอประโยคดี ๆ จาก TikTok ใส่เพิ่มได้</small></button></div>
+  </div>`;
+  v.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{libTopic=b.dataset.t;regF="all";render();scrollTo(0,0)});
+  $("#add").onclick=()=>{libAdd=true;render()};
+}
+function viewAdd(){
+  const v=$("#view"),zh=lang==="zh";
+  v.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+    <div class="back"><button class="x" id="back" aria-label="กลับ">‹</button><h2>เพิ่มประโยคของฉัน</h2></div>
+    <form class="add panel" id="addf">
+      <label>ประโยค${DATA[lang].name}<input id="f-t" required placeholder="${zh?"เช่น 我很高兴":lang==="de"?"เช่น Ich bin müde.":lang==="fr"?"เช่น Je suis fatigué.":lang==="th"?"เช่น ดีใจมากครับ":"เช่น I'm so tired."}"></label>
+      <label>${lang==="th"?"ความหมาย (ไทยหรืออังกฤษ)":"ความหมายภาษาไทย"}<input id="f-m" required placeholder="${lang==="th"?"เช่น I'm very happy":"เช่น ฉันดีใจมาก"}"></label>
+      <label>${zh?"พินอิน":lang==="th"?"คำอ่านคาราโอเกะ":"วิธีออกเสียง"} (ไม่ใส่ก็ได้)<input id="f-r"></label>
+      <label>คำอ่านภาษาไทย (ไม่ใส่ก็ได้)<input id="f-p"></label>
+      <button class="primary" type="submit">บันทึก</button>
+    </form>
+    ${S().custom.length?`<p class="hint">มีประโยคของคุณแล้ว ${S().custom.length} ประโยค อยู่ในหมวด "ประโยคของฉัน" และจะถูกส่งเข้ารอบทบทวนอัตโนมัติ</p>`:""}
+  </div>`;
+  $("#back").onclick=()=>{libAdd=false;render()};
+  $("#addf").onsubmit=e=>{e.preventDefault();
+    S().custom.push({id:"c-"+Date.now(),t:$("#f-t").value.trim(),m:$("#f-m").value.trim(),r:$("#f-r").value.trim(),p:$("#f-p").value.trim(),n:"",ex:"",exm:""});
+    save();libAdd=false;libTopic="mine";render()};
+}
+
+/* ---------- study session ---------- */
+let Q=[],cur=null,sess=null;
+function startSession(practiceCards){
+  Q=[];
+  if(practiceCards){Q=shuffle(practiceCards.slice()).map(c=>({c,k:"test"}))}
+  else{const fresh=unseenOrdered().slice(0,newLeft()),d=due().slice(0,60);
+    const a=fresh.map(c=>({c,k:"learn"})),b=d.map(c=>({c,k:"test"}));
+    while(a.length||b.length){if(a.length)Q.push(a.shift());if(b.length)Q.push(b.shift());if(b.length)Q.push(b.shift())}}
+  if(!Q.length)return;
+  prefetchTexts(Q.flatMap(q=>[q.c.t,q.c.ex]));
+  sess={total:Q.length,done:0,xp:0,right:0,asked:0,combo:0,best:0,start:Date.now(),ids:new Set(),practice:!!practiceCards};
+  $("#study").hidden=false;document.body.style.overflow="hidden";next();
+}
+function closeStudy(){$("#study").hidden=true;document.body.style.overflow="";try{speechSynthesis.cancel()}catch(e){};render()}
+function pickKind(c){
+  const b=(st(c.id)||{b:0}).b;
+  if(b===0)return"read";
+  if(c.gap&&Math.random()<.6)return"gap";
+  if(b===1)return hasTTS?"listen":"read";
+  const r=Math.random();return r<.5?"speak":(hasTTS?"listen":"read");
+}
+function gapOpts(c){return shuffle([{id:c.id,m:c.t},...c.opts.map((w,i)=>({id:"x"+i,m:w}))])}
+const gapHTML=c=>`<p class="gapline han">${esc(c.gap).replace("___","<u>&nbsp;?&nbsp;</u>")}</p><p class="hint" style="text-align:center">${esc(c.exm)}</p>`;
+function options(c){
+  const pool=deck().filter(x=>x.id!==c.id&&x.m!==c.m);
+  const same=pool.filter(x=>x.g===c.g),other=pool.filter(x=>x.g!==c.g);
+  const pick=[];const sh=a=>a.sort(()=>Math.random()-.5);
+  for(const x of sh(same).concat(sh(other))){if(pick.length>=3)break;if(!pick.some(p=>p.m===x.m))pick.push(x)}
+  return sh([c,...pick]);
+}
+function next(){
+  cur=Q.shift()||null;
+  if(!cur)return finish();
+  if(cur.k==="test")cur.kind=pickKind(cur.c);
+  if(cur.kind==="read"||cur.kind==="listen")cur.opts=options(cur.c);
+  if(cur.kind==="gap")cur.opts=gapOpts(cur.c);
+  cur.state="ask";drawStudy();
+  if(cur.k==="learn"||cur.kind==="listen")speak(cur.c.t);
+}
+function fullCard(c){
+  return`<div class="reveal"><p class="big han">${esc(c.t)}</p>${c.r?`<p class="roman">${esc(c.r)}</p>`:""}${c.p?`<p class="pron">${esc(c.p)}</p>`:""}<p class="mean">${esc(c.m)}</p>${c.reg&&REG[c.reg]?`<p style="margin:0">${regTag(c)}</p>`:""}</div>${audioBtns(c.t)}
+  ${c.ex?`<div class="exbox"><div style="flex:1;min-width:0"><span class="han">${esc(c.ex)}</span>${c.exr?`<small style="font-family:var(--f-lat);color:var(--accent)">${esc(c.exr)}</small>`:""}<small>${esc(c.exm)}</small></div>${hasTTS?`<button class="iconbtn" aria-label="ฟังตัวอย่าง" data-say="${esc(c.ex)}">${ICON_PLAY}</button>`:""}</div>`:""}
+  ${c.n?`<p class="tip"><b>ทริก</b> ${esc(c.n)}</p>`:""}${lang==="zh"&&[...c.t].some(x=>SIDX[x]!=null)?`<div class="filters"><span class="hint" style="align-self:center">✍️ วิธีเขียน</span>${[...new Set([...c.t].filter(x=>SIDX[x]!=null))].map(x=>`<button data-hz="${esc(x)}">${esc(x)}</button>`).join("")}</div>`:""}${c.g!=="mine"?knownBtn(c):""}${c.src?`<p class="src">ที่มา: <a href="${esc(c.src)}" target="_blank" rel="noopener">${esc(srcName(c.src))}</a></p>`:""}`;
+}
+function srcName(u){try{const h=new URL(u).hostname;return h.includes("goethe")?"Goethe-Institut":h.includes("bbc")?"BBC Learning English":h.includes("dw.com")?"DW Learn German":h}catch(e){return u}}
+function drawStudy(){
+  const el=$("#study"),c=cur.c,L=DATA[lang],pct=Math.round(sess.done/Math.max(1,sess.total)*100);
+  let mode,body,foot="",footCls="";
+  if(cur.k==="learn"){
+    mode="ประโยคใหม่";body=fullCard(c)+`<div class="pkrow">${mascot("talk",64)}</div><p class="hint" style="text-align:center">ฟัง แล้วพูดตามออกเสียงดัง ๆ 2 รอบ ปากได้ขยับ สมองจะจำได้ไวกว่าอ่านเฉย ๆ</p>`;
+    foot=`<button class="primary" id="go">พูดตามแล้ว ไปต่อ</button>`;
+  }else if(cur.kind==="read"||cur.kind==="listen"||cur.kind==="gap"){
+    mode=cur.kind==="read"?"อ่านแล้วเลือกความหมาย":cur.kind==="gap"?"เลือกคำเชื่อมเติมช่องว่าง":"ฟังแล้วเลือกความหมาย";
+    const prompt=cur.kind==="gap"?gapHTML(c):cur.kind==="read"?`<p class="big han" style="text-align:center">${esc(c.t)}</p>${hasTTS?`<div class="audio"><button class="play" data-say="${esc(c.t)}">${ICON_PLAY} ฟัง</button></div>`:""}`
+      :`<button class="play huge" data-say="${esc(c.t)}" aria-label="ฟังอีกครั้ง">${ICON_PLAY}</button><div class="audio"><button class="play" data-say="${esc(c.t)}" data-slow="1">${ICON_SLOW} ฟังช้า ๆ</button></div>`;
+    const ans=cur.state!=="ask";
+    body=`${prompt}<div class="opts">${cur.opts.map((o,i)=>{let cls="";if(ans){if(o.id===c.id)cls="right";else if(cur.pick===i)cls="wrong"}return`<button class="opt${cur.kind==="gap"?" han":""} ${cls}" data-i="${i}" ${ans?"disabled":""}>${esc(o.m)}</button>`}).join("")}</div>`;
+    if(ans){body+=`<div class="panel" style="padding:12px">${fullCard(c)}</div>`;
+      footCls=cur.state==="right"?"good":"bad";
+      foot=`<p class="fbline">${cur.state==="right"?(sess.combo>=3?"ถูกต้อง! ติดกัน "+sess.combo+" ข้อ":"ถูกต้อง! +10 XP"):"ยังไม่ใช่ คำตอบคือ "+esc(cur.kind==="gap"?c.t:c.m)}</p><button class="primary" id="go">ไปต่อ</button>`}
+  }else{
+    mode="พูดเป็นภาษา"+L.name;
+    if(cur.state==="ask"){body=`<p class="ask">พูดประโยคนี้ออกเสียงจริง แล้วค่อยกดดูเฉลย</p><p class="big" style="font-size:clamp(28px,8vw,38px)">${esc(c.m)}</p>`;
+      foot=`<button class="primary" id="show">ดูเฉลย</button>`}
+    else{const s=st(c.id);body=fullCard(c);
+      foot=`<p class="fbline" style="color:var(--ink)">พูดได้ใกล้เคียงแค่ไหน</p><div class="rate"><button class="r0" data-g="0">พูดไม่ได้<small>${lbl(nextFor(s,0).d)}</small></button><button class="r1" data-g="1">ติด ๆ ขัด ๆ<small>${lbl(nextFor(s,1).d)}</small></button><button class="r2" data-g="2">พูดได้<small>${lbl(nextFor(s,2).d)}</small></button></div>`}
+  }
+  el.innerHTML=`<div class="top"><button class="x" id="quit" aria-label="ออก">×</button><div class="bar"><i style="width:${pct}%"></i></div><span class="combo">${sess.combo>=2?"×"+sess.combo:""}</span></div>
+    <div class="stage" id="stage"><span class="mode">${mode}</span>${body}</div>
+    <div class="foot ${footCls}">${foot}</div>`;
+  $("#stage").scrollTop=0;
+  $("#quit").onclick=()=>{save();closeStudy()};
+  const go=$("#go");if(go)go.onclick=()=>{if(cur.k==="learn")learned();else{sess.done++;next()}};
+  const sh=$("#show");if(sh)sh.onclick=()=>{cur.state="shown";drawStudy();speak(c.t)};
+  el.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>answer(+b.dataset.i));
+  el.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{grade(+b.dataset.g);sess.done++;next()});
+}
+function learned(){
+  const s=S(),kn=isKnown(cur.c.id);if(!kn)s.cards[cur.c.id]={b:0,d:Date.now(),l:0};sess.ids.add(cur.c.id);s.newCount++;bump();addXP(5);sess.xp+=5;save();
+  if(!kn){Q.splice(Math.min(Q.length,2),0,{c:cur.c,k:"test"});sess.total++}sess.done++;next();
+}
+function grade(g){
+  const id=cur.c.id,old=st(id)||{b:0,d:Date.now(),l:0};sess.ids.add(id);
+  if(sess.practice){if(g===0)S().cards[id]=Object.assign({},old,{b:Math.max(0,old.b-1),d:Date.now(),l:(old.l||0)+1})}
+  else{const n=nextFor(old,g);n.l=(old.l||0)+(g===0?1:0);S().cards[id]=n}
+  bump();
+  const x=g===2?10:g===1?6:2;addXP(x);sess.xp+=x;
+  if(g===0){Q.splice(Math.min(Q.length,3),0,{c:cur.c,k:"test"});sess.total++}
+  sess.asked++;if(g>0){sess.right++;sess.combo++;sess.best=Math.max(sess.best,sess.combo)}else sess.combo=0;
+  save();
+}
+function answer(i){
+  const ok=cur.opts[i].id===cur.c.id;cur.pick=i;cur.state=ok?"right":"wrong";
+  grade(ok?2:0);
+  speak(cur.c.t);drawStudy();
+}
+function finish(){
+  const el=$("#study"),acc=sess.asked?Math.round(sess.right/sess.asked*100):100,mins=Math.max(1,Math.round((Date.now()-sess.start)/60000));
+  const p=plan(),xp=xpToday();
+  el.innerHTML=`<div class="top"><button class="x" id="quit" aria-label="ปิด">×</button><div class="bar"><i style="width:100%"></i></div><span class="combo"></span></div>
+  <div class="stage"><div class="done"><div class="pkrow">${mascot("win",120)}</div><div class="xp pop">+${sess.xp}</div><div style="font-weight:700;font-size:20px">XP · จบรอบแล้ว</div>
+  <p class="hint">${xp>=p.xp?"ครบเป้า XP วันนี้แล้ว ไฟต่อเนื่อง "+streakNow()+" วัน":"อีก "+(p.xp-xp)+" XP จะครบเป้าวันนี้"}</p>
+  <div class="grid"><div class="st"><b>${acc}%</b><small>ตอบถูก</small></div><div class="st"><b>${sess.best}</b><small>ถูกติดกันสูงสุด</small></div><div class="st"><b>${mins}</b><small>นาที</small></div></div>
+  <p class="hint">ระบบจะเรียกแต่ละประโยคกลับมาตอนที่ใกล้จะลืมพอดี เล่นเกมทดสอบเพื่อดูว่าจำได้แค่ไหน</p></div></div>
+  <div class="foot"><div style="display:grid;gap:8px"><button class="primary" id="totest">เล่นเกมทดสอบ วัดผลรอบนี้</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="ghost" id="tochat">ดูคลังประโยค</button><button class="ghost" id="close2">กลับหน้าแรก</button></div></div></div>`;
+  $("#quit").onclick=closeStudy;$("#close2").onclick=closeStudy;$("#tochat").onclick=()=>{tab="lib";closeStudy()};
+  const ids=[...sess.ids];$("#totest").onclick=()=>startTest(deck().filter(c=>ids.includes(c.id)),"ทดสอบหลังเรียน");
+  confetti();
+}
+/* ---------- test game ---------- */
+function best(title){const ts=(S().tests||[]).filter(t=>t.title==="สอบท้ายบท: "+title);return ts.length?" · ดีสุด "+Math.max(...ts.map(t=>t.pct))+"%":""}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const learnedCards=()=>deck().filter(c=>st(c.id));
+let T=null;
+function startTest(cards,title,gapOnly){const sceneOnly=gapOnly==="scene",pickMode=gapOnly==="tone"||gapOnly==="sx"?gapOnly:null;if(sceneOnly||pickMode)gapOnly=false;
+  let pool=shuffle([...new Map(cards.map(c=>[c.id,c])).values()]).slice(0,10);
+  if(pool.length<6&&!gapOnly&&!sceneOnly&&!pickMode){const ids=new Set(pool.map(c=>c.id));pool=pool.concat(shuffle(learnedCards().filter(c=>!ids.has(c.id))).slice(0,6-pool.length))}
+  if(pool.length<4){const ids=new Set(pool.map(c=>c.id));pool=pool.concat(unseenOrdered().filter(c=>!ids.has(c.id)&&c.m).slice(0,6-pool.length))}if(pool.length<4){toast("ชุดนี้มีประโยคน้อยเกินไปสำหรับเกมทดสอบ");return}
+  const types=["read","listen","reverse"];const qs=pool.map((c,i)=>({c,type:pickMode?pickMode:sceneOnly?"scene":c.gap&&(gapOnly||i%2===0)?"gap":SCN[c.g]&&i%4===3?"scene":types[i%3]}));
+  if(pool.length>=6&&!gapOnly&&!sceneOnly&&!pickMode)qs.splice(Math.floor(qs.length/2),0,{type:"match",cards:shuffle(pool.slice()).slice(0,4)});
+  prefetchTexts(pool.map(c=>c.t));
+  T={title,qs,i:-1,score:0,right:0,answered:0,hearts:3,combo:0,miss:new Map(),start:Date.now(),timer:null};
+  $("#study").hidden=false;document.body.style.overflow="hidden";
+  $("#study").innerHTML=`<div class="top"><button class="x" id="tq" aria-label="ออก">×</button><div class="bar"><i style="width:0"></i></div><span class="combo"></span></div>
+  <div class="stage"><div class="done"><div class="pkrow">${mascot("idle",110)}</div><span class="mode">${esc(title)}</span><div style="font:800 40px var(--f-lat);color:var(--xp)">${qs.length} ข้อ</div>
+  <div class="grid"><div class="st"><b class="hearts">♥♥♥</b><small>หัวใจ 3 ดวง</small></div><div class="st"><b>15 วิ</b><small>ต่อข้อ</small></div><div class="st"><b>+โบนัส</b><small>ตอบเร็ว ตอบติดกัน</small></div></div>
+  <p class="hint">มีทั้งอ่าน ฟัง เลือกประโยคจากความหมาย และเกมจับคู่ ตอบผิดเสียหัวใจ หัวใจหมดเกมจบ</p></div></div>
+  <div class="foot"><button class="primary" id="tgo">เริ่มเกม</button></div>`;
+  $("#tq").onclick=closeTest;$("#tgo").onclick=nextQ;
+}
+const TONEOPT_TH=["mid (สามัญ)","low (เอก)","falling (โท)","high (ตรี)","rising (จัตวา)"];
+const TONEOPT_ZH=["เสียง 1  ˉ  (ā) ราบสูง","เสียง 2  ˊ  (á) ขึ้น","เสียง 3  ˇ  (ǎ) ลงแล้วขึ้น","เสียง 4  ˋ  (à) ตกแรง","เสียงเบา (a) ไม่มีเครื่องหมาย"];
+const ZHT={"ā":0,"á":1,"ǎ":2,"à":3,"ē":0,"é":1,"ě":2,"è":3,"ī":0,"í":1,"ǐ":2,"ì":3,"ō":0,"ó":1,"ǒ":2,"ò":3,"ū":0,"ú":1,"ǔ":2,"ù":3,"ǖ":0,"ǘ":1,"ǚ":2,"ǜ":3};
+function zhTone(c){if(![...String(c.t).replace(/[。，！？]/g,"")].every(isHan)||[...String(c.t).replace(/[。，！？]/g,"")].length!==1)return null;const ts=[...String(c.r)].map(x=>ZHT[x]).filter(x=>x!=null);if(/\s/.test(String(c.r).trim()))return null;return ts.length===1?ts[0]:ts.length===0?4:null}
+function toneCards(){return lang==="zh"?DATA.zh.cards.map(c=>{const tn=zhTone(c);return tn==null?null:Object.assign({},c,{tn})}).filter(Boolean):DATA[lang].cards.filter(c=>c.tn!=null)}
+function closeTest(){clearTimeout(T&&T.timer);T=null;closeStudy()}
+function hearts(){return"♥".repeat(T.hearts)+"♡".repeat(3-T.hearts)}
+function nextQ(){
+  clearTimeout(T.timer);T.i++;
+  if(T.i>=T.qs.length||T.hearts<=0)return endTest();
+  const q=T.qs[T.i];q.done=false;
+  if(q.type==="gap")q.opts=gapOpts(q.c);
+  else if(q.type==="tone"){q.opts=(lang==="zh"?TONEOPT_ZH:TONEOPT_TH).map((m,i)=>({id:i,m}));q.ans=q.c.tn}
+  else if(q.type==="sx"){q.opts=[{id:"m",m:"👨 A man"},{id:"f",m:"👩 A woman"}];q.ans=q.c.sx}
+  else if(q.type!=="match")q.opts=options(q.c);
+  else{q.left=shuffle(q.cards.slice());q.right=shuffle(q.cards.slice());q.got=new Set();q.sel=null;q.err=0}
+  drawQ();
+  if(q.type==="listen"||q.type==="tone"||q.type==="sx")speak(q.c.t);
+  const secs=q.type==="match"?30:15;q.t0=Date.now();q.secs=secs;
+  const bar=$("#tbar");if(bar){bar.style.transition="none";bar.style.width="100%";requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition="width "+secs+"s linear";bar.style.width="0%"}))}
+  T.timer=setTimeout(()=>{if(!q.done)resolveQ(false,true)},secs*1000);
+}
+function drawQ(fb){
+  const q=T.qs[T.i],el=$("#study"),pct=Math.round(T.i/T.qs.length*100);
+  let mode,body;
+  if(q.type==="match"){mode="จับคู่ให้ครบ";
+    body=`<p class="ask">แตะประโยคทางซ้าย แล้วแตะความหมายที่ตรงกันทางขวา</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="opts">${q.left.map(c=>`<button class="opt han${q.got.has(c.id)?" right":""}${q.sel===c.id?" sel":""}" data-l="${esc(c.id)}" ${q.got.has(c.id)||q.done?"disabled":""}>${esc(c.t)}</button>`).join("")}</div>
+      <div class="opts">${q.right.map(c=>`<button class="opt${q.got.has(c.id)?" right":""}" data-r="${esc(c.id)}" ${q.got.has(c.id)||q.done?"disabled":""} style="font-size:14.5px">${esc(c.m)}</button>`).join("")}</div></div>`;
+  }else{const c=q.c;
+    mode={read:"อ่านแล้วเลือกความหมาย",listen:"ฟังแล้วเลือกความหมาย",reverse:"เลือกประโยคที่แปลว่า",gap:"เลือกคำเชื่อมเติมช่องว่าง",scene:"สถานการณ์จำลอง",tone:lang==="th"?"Listen and pick the tone":"ฟังแล้วเลือกเสียงวรรณยุกต์",sx:"Who is speaking?"}[q.type];
+    const prompt=q.type==="tone"||q.type==="sx"?`<p class="big han" style="text-align:center">${esc(c.t)}</p><p class="hint" style="text-align:center">${esc(q.type==="tone"?(lang==="zh"?"ความหมาย: "+c.m+(q.done?" · "+c.r:""):c.r+" · "+c.m):c.r)}</p><div class="audio"><button class="play" data-say="${esc(c.t)}">${ICON_PLAY} ฟัง</button></div>`:q.type==="scene"?sceneHTML(c):q.type==="gap"?gapHTML(c):q.type==="read"?`<p class="big han" style="text-align:center">${esc(c.t)}</p>`:q.type==="listen"?`<button class="play huge" data-say="${esc(c.t)}" aria-label="ฟังอีกครั้ง">${ICON_PLAY}</button>`:`<p class="big" style="text-align:center;font-size:clamp(26px,7.5vw,36px)">${esc(c.m)}</p>`;
+    body=prompt+`<div class="opts">${q.opts.map((o,i)=>{let cls="";if(q.done){if(o.id===(q.ans!=null?q.ans:c.id))cls="right";else if(q.pick===i)cls="wrong"}return`<button class="opt${q.type==="reverse"||q.type==="gap"||q.type==="scene"?" han":""} ${cls}" data-i="${i}" ${q.done?"disabled":""}>${esc(q.type==="reverse"||q.type==="scene"?o.t:o.m)}</button>`}).join("")}</div>`;
+    if(q.done&&!q.ok)body+=`<div class="panel" style="padding:12px">${fullCard(c)}</div>`;
+  }
+  el.innerHTML=`<div class="top"><button class="x" id="tq" aria-label="ออก">×</button><div class="bar"><i style="width:${pct}%"></i></div><span class="combo hearts" style="color:var(--again);min-width:54px">${hearts()}</span></div>
+    <div style="max-width:560px;width:100%;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))"><div class="bar" style="height:5px;background:transparent"><i id="tbar" style="width:${q.done?0:100}%;background:var(--hard)"></i></div></div>
+    <div class="stage" id="stage"><div class="row-flex" style="justify-content:space-between"><span class="row-flex" style="gap:8px">${mascot(fb?(fb.cls==="good"?"happy":"oops"):"think",54)}<span class="mode">${mode}</span></span><span style="font:800 18px var(--f-lat);color:var(--xp);font-variant-numeric:tabular-nums">${T.score}</span></div>${body}</div>
+    <div class="foot ${fb?fb.cls:""}">${fb?`<p class="fbline">${fb.msg}</p><button class="primary" id="tnext">${T.hearts<=0?"ดูผลคะแนน":"ข้อต่อไป"}</button>`:`<p class="hint" style="text-align:center">ข้อ ${T.i+1} จาก ${T.qs.length}</p>`}</div>`;
+  $("#tq").onclick=closeTest;
+  const nx=$("#tnext");if(nx)nx.onclick=nextQ;
+  el.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{q.pick=+b.dataset.i;resolveQ(q.opts[q.pick].id===(q.ans!=null?q.ans:q.c.id))});
+  el.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{q.sel=b.dataset.l;const c=q.cards.find(x=>x.id===q.sel);speak(c.t);drawQ()});
+  el.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{if(!q.sel)return;
+    if(b.dataset.r===q.sel){q.got.add(q.sel);q.sel=null;T.score+=25;if(q.got.size===q.cards.length){resolveQ(q.err<2)}else drawQ()}
+    else{q.err++;b.classList.add("wrong");setTimeout(()=>b.classList.remove("wrong"),400);const c=q.cards.find(x=>x.id===q.sel);T.miss.set(c.id,c)}});
+}
+function resolveQ(ok,timeout){
+  const q=T.qs[T.i];if(q.done)return;q.done=true;q.ok=ok;clearTimeout(T.timer);T.answered++;
+  const left=Math.max(0,q.secs-(Date.now()-q.t0)/1000);
+  if(ok){T.right++;T.combo++;const pts=(q.type==="match"?0:100)+Math.round(left*5)+(T.combo>=2?T.combo*10:0);T.score+=pts;addXP(4);
+    if(q.c)speak(q.c.t);
+    drawQ({cls:"good",msg:(T.combo>=3?"ติดกัน "+T.combo+" ข้อ! ":"ถูกต้อง! ")+"+"+pts});
+    setTimeout(()=>{if(T&&T.qs[T.i]===q)nextQ()},1100);
+  }else{T.combo=0;T.hearts--;
+    if(q.c){T.miss.set(q.c.id,q.c);speak(q.c.t)}
+    const ansTxt=q.ans!=null?(q.opts.find(o=>o.id===q.ans)||{}).m:q.type==="reverse"||q.type==="gap"||q.type==="scene"?q.c&&q.c.t:q.c&&q.c.m;
+    const msg=q.ans!=null?(timeout?"หมดเวลา ":"ยังไม่ใช่ ")+"คำตอบคือ "+esc(ansTxt):timeout?"หมดเวลา"+(q.c?" คำตอบคือ "+esc(q.type==="reverse"||q.type==="gap"||q.type==="scene"?q.c.t:q.c.m):""):q.type==="match"?"จับผิดหลายครั้ง เสียหัวใจ 1 ดวง":"ยังไม่ใช่ คำตอบคือ "+esc(q.type==="reverse"||q.type==="gap"||q.type==="scene"?q.c.t:q.c.m);
+    drawQ({cls:"bad",msg});}
+  save();
+}
+function endTest(){
+  clearTimeout(T.timer);
+  const total=T.qs.length,pct=Math.round(T.right/total*100);
+  const g=pct>=90?["ยอดเยี่ยม","พร้อมใช้จริงแล้ว"]:pct>=75?["ดีมาก","อีกนิดเดียวก็คล่อง"]:pct>=60?["ผ่าน","ทบทวนข้อที่พลาดอีกรอบจะดีขึ้นเยอะ"]:["ต้องทบทวน","ไม่เป็นไร ระบบจะเอาข้อที่พลาดกลับมาให้ทวนเร็วขึ้น"];
+  const miss=[...T.miss.values()];const s=S();
+  for(const c of miss){const o=st(c.id);if(o)s.cards[c.id]=Object.assign({},o,{d:Date.now(),l:(o.l||0)+1})}
+  s.tests=(s.tests||[]).concat([{d:Date.now(),title:T.title,pct,score:T.score,n:total}]).slice(-40);save();
+  $("#study").innerHTML=`<div class="top"><button class="x" id="tq" aria-label="ปิด">×</button><div class="bar"><i style="width:100%"></i></div><span class="combo"></span></div>
+  <div class="stage"><div class="done"><div class="pkrow">${mascot(pct>=75?"win":pct>=60?"happy":"oops",120)}</div><span class="mode">${esc(T.title)}</span><div class="xp pop">${pct}%</div><div style="font-weight:800;font-size:22px">${g[0]}</div><p class="hint">${g[1]}</p>
+  <div class="grid"><div class="st"><b>${T.right}/${total}</b><small>ข้อที่ถูก</small></div><div class="st"><b>${T.score}</b><small>คะแนน</small></div><div class="st"><b class="hearts" style="color:var(--again)">${hearts()}</b><small>หัวใจที่เหลือ</small></div></div></div>
+  ${miss.length?`<h2>ประโยคที่พลาด</h2><div class="list">${miss.map(c=>`<div class="item"><div class="t han">${esc(c.t)}</div><div class="side"><button class="iconbtn" aria-label="ฟัง" data-say="${esc(c.t)}">${ICON_PLAY}</button></div><div class="s"><em>${esc(c.r)}</em>${c.p?" · "+esc(c.p):""}</div><div class="m">${esc(c.m)}</div></div>`).join("")}</div>`:""}</div>
+  <div class="foot"><div style="display:grid;gap:8px">${miss.length?`<button class="primary" id="trev">ทบทวนประโยคที่พลาด (${miss.length})</button>`:`<button class="primary" id="tagain">เล่นอีกรอบ</button>`}<button class="ghost" id="tclose">กลับหน้าแรก</button></div></div>`;
+  const cards=T.qs.filter(q=>q.c).map(q=>q.c),title=T.title;
+  $("#tq").onclick=closeTest;$("#tclose").onclick=closeTest;
+  const rv=$("#trev");if(rv)rv.onclick=()=>{T=null;startSession(miss)};
+  const ag=$("#tagain");if(ag)ag.onclick=()=>startTest(cards,title);
+  if(pct>=75)confetti();
+}
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cv=document.createElement("canvas");cv.className="confetti";document.body.appendChild(cv);
+  const ctx=cv.getContext("2d"),W=cv.width=innerWidth,H=cv.height=innerHeight;
+  const cs=getComputedStyle(document.body),cols=["--accent","--xp","--good","--hard"].map(v=>cs.getPropertyValue(v).trim()||"#c33");
+  const ps=Array.from({length:90},()=>({x:W/2,y:H*.3,vx:(Math.random()-.5)*12,vy:-Math.random()*12-4,r:Math.random()*6+4,c:cols[Math.floor(Math.random()*cols.length)],a:Math.random()*6}));
+  let f=0;(function tick(){ctx.clearRect(0,0,W,H);for(const p of ps){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.a+=.2;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);ctx.restore()}
+    if(++f<110)requestAnimationFrame(tick);else cv.remove()})();
+}
+
+/* ---------- audio files ---------- */
+const loadedA=new Set();
+const chunkP={};
+function loadChunk(i){if(chunkP[i])return chunkP[i];return chunkP[i]=new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="a"+i+".js";sc.async=true;sc.onload=()=>ok();sc.onerror=()=>{delete chunkP[i];sc.remove();no()};document.head.appendChild(sc)})}
+function prefetchTexts(ts){const need=new Set();for(const t of ts){const i=AIDX[hk(lang+"|"+t)];if(i!=null&&!chunkP[i])need.add(i)}[...need].slice(0,6).forEach(i=>loadChunk(i).catch(()=>{}))}
+let bgL=null;
+function loadAudio(l){if(bgL===l)return;bgL=l;const list=(ACHUNKS[l]||[]).slice();
+  (function step(){if(bgL!==l||!list.length)return;const i=list.shift();if(chunkP[i])return setTimeout(step,50);loadChunk(i).catch(()=>{}).then(()=>setTimeout(step,300))})()}
+
+/* ---------- alphabet ---------- */
+let alphaShow=120;
+const isHan=ch=>/[㐀-鿿⺀-⿟㇀-㇯\u{20000}-\u{2a6df}]/u.test(ch);
+function viewAlpha(){
+  const v=$("#view"),A=ALPHA[lang];
+  const groups=A.groups.map((g,gi)=>`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><h2>${esc(g.title)}</h2>${g.note?`<p class="hint">${esc(g.note)}</p>`:""}
+    <div class="agrid">${g.items.map((it,ii)=>`<button class="acell" data-a="${gi}:${ii}"><b>${it.tm?markSVG(it.c,40):esc(it.c)}</b><small>${esc(it.p||it.name||"")}</small></button>`).join("")}</div></div>`).join("");
+  let han="";
+  if(lang==="zh"){const list=HANZI.slice(0,alphaShow);
+    han=`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><h2>ตัวจีนทั้งหมดในแอป (${HANZI.length} ตัว)</h2><p class="hint">เรียงจากตัวที่เจอบ่อยที่สุดในคลังประโยค แตะเพื่อดูลำดับขีด ฝึกเขียน และคำที่ใช้ตัวนี้</p>
+    <div class="agrid">${list.map(([ch,py],i)=>`<button class="acell" data-h="${i}"><b>${esc(ch)}</b><small>${esc(((window.CHARINFO||{})[ch]||{}).p||py)}</small></button>`).join("")}</div>
+    ${alphaShow<HANZI.length?`<button class="ghost" id="more-h">แสดงเพิ่ม (${HANZI.length-alphaShow} ตัว)</button>`:""}</div>`}
+  v.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+    <p class="hint">${lang==="th"?"Start with the 44 consonants, then vowels and tone marks. Tap a letter to hear it, see its reading, and trace it with your finger.":lang==="zh"?"ภาษาจีนอ่านด้วยพินอิน เริ่มที่สัญลักษณ์เสียงบนพินอินและ 4 เสียงก่อน แล้วค่อยพยัญชนะ สระ ขีดพื้นฐาน และส่วนประกอบ":"แตะตัวอักษรเพื่อฟังเสียง ดูวิธีออกเสียงเป็นภาษาไทย วิธีเขียน และลองเขียนตามด้วยนิ้ว"}</p>
+    ${groups}${han}</div>`;
+  v.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const[gi,ii]=b.dataset.a.split(":").map(Number);openAlpha(A.groups[gi].items[ii],A.groups[gi].title)});
+  v.querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>openHanzi(HANZI[+b.dataset.h]));
+  const m=$("#more-h");if(m)m.onclick=()=>{alphaShow+=240;viewAlpha()};
+}
+function overlay(title,body){
+  const el=$("#study");el.hidden=false;document.body.style.overflow="hidden";
+  el.innerHTML=`<div class="top"><button class="x" id="ax" aria-label="ปิด">×</button><div style="flex:1;font-weight:700">${esc(title)}</div></div><div class="stage" id="stage">${body}</div>`;
+  $("#ax").onclick=closeStudy;return el;
+}
+function glyphs(c){const parts=String(c).split(/\s+/).filter(Boolean);return parts.length?parts:[c]}
+function traceHTML(chars){return`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><div class="row-flex" style="justify-content:space-between;flex-wrap:wrap"><h2>ลองเขียนตาม</h2>
+  <div class="filters">${chars.map((g,i)=>`<button data-tc="${i}" aria-pressed="${i===0}">${esc(g)}</button>`).join("")}<button id="tclear">ล้าง</button></div></div>
+  <div class="trace" id="trace"><div class="ghost-ch" id="ghost">${esc(chars[0])}</div><div class="hw" id="hw"></div><canvas id="tc"></canvas></div>
+  <p class="hint" style="text-align:center">ใช้นิ้วลากตามตัวจาง ๆ ${lang==="zh"?"ตามลำดับขีด":""}</p></div>`}
+function bindTrace(chars){
+  const cv=$("#tc"),box=$("#trace");if(!cv)return;
+  const fit=()=>{const r=box.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;const x=cv.getContext("2d");x.scale(d,d);x.lineCap="round";x.lineJoin="round";x.lineWidth=Math.max(6,r.width/28);x.strokeStyle=getComputedStyle(document.body).getPropertyValue("--accent").trim()||"#c33"};
+  fit();let down=false,last=null;const ctx=()=>cv.getContext("2d");
+  const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+  cv.onpointerdown=e=>{down=true;last=pt(e);cv.setPointerCapture(e.pointerId);const x=ctx();x.beginPath();x.arc(last[0],last[1],x.lineWidth/2,0,7);x.fillStyle=x.strokeStyle;x.fill()};
+  cv.onpointermove=e=>{if(!down)return;const p=pt(e),x=ctx();x.beginPath();x.moveTo(last[0],last[1]);x.lineTo(p[0],p[1]);x.stroke();last=p};
+  cv.onpointerup=cv.onpointercancel=()=>{down=false};
+  const clear=()=>{const x=ctx();x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cv.width,cv.height);x.restore()};
+  $("#tclear").onclick=clear;
+  document.querySelectorAll("[data-tc]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-tc]").forEach(x=>x.setAttribute("aria-pressed",x===b));$("#ghost").textContent=chars[+b.dataset.tc];clear()});
+}
+function openAlpha(it,group){
+  const chars=glyphs(it.c),exCh=lang==="zh"?[...String(it.ex||"")].find(isHan):null,single=lang==="zh"&&chars.length===1&&[...chars[0]].length===1&&isHan(chars[0]),animCh=single&&!/笔画|ขีดพื้นฐาน|部首|ส่วนประกอบ/.test(group)?chars[0]:exCh,han=!!animCh;
+  overlay(group,`<p class="glyph">${esc(it.c)}</p>
+    <div class="reveal" style="text-align:center">${it.name?`<p class="roman">${esc(it.name)}</p>`:""}${it.p?`<p class="pron">อ่านว่า ${esc(it.p)}</p>`:""}</div>
+    ${it.say?audioBtns(it.say):""}
+    ${it.s?`<p class="tip"><b>เสียง/ความหมาย</b> ${esc(it.s)}</p>`:""}
+    ${it.w?`<p class="tip"><b>วิธีเขียน</b> ${esc(it.w)}</p>`:""}
+
+    ${it.ex?`<div class="exbox"><div style="flex:1;min-width:0"><span class="han">${esc(it.ex)}</span><small>${esc(it.exm||"")}</small></div><button class="iconbtn" aria-label="ฟังตัวอย่าง" data-say="${esc(String(it.ex).split(/\s+/)[0])}">${ICON_PLAY}</button></div>`:""}
+    ${han&&SIDX[animCh]!=null?(animCh!==chars[0]?`<p class="hint">ตัวอย่างการเขียนด้วยตัว ${esc(animCh)}</p>`:"")+strokePanel(animCh):traceHTML(chars)}`);
+  if(han&&SIDX[animCh]!=null)bindStroke(animCh);else bindTrace(chars);
+  if(it.say)speak(it.say);
+}
+function openHanzi(h){
+  const ch=Array.isArray(h)?h[0]:h,hz=HANZI.find(x=>x[0]===ch)||[ch,"",0],info=(window.CHARINFO||{})[ch]||{};
+  const words=deck().filter(c=>c.t.includes(ch)).sort((a,b)=>a.t.length-b.t.length).slice(0,8);
+  overlay("ตัวจีน",`<p class="glyph">${esc(ch)}</p>
+    <div class="reveal" style="text-align:center"><p class="roman">${esc(info.py||hz[1])}</p>${info.p?`<p class="pron">อ่านว่า ${esc(info.p)}</p>`:""}${info.m?`<p class="mean">${esc(info.m)}</p>`:""}</div>
+    ${words[0]?`<div class="audio"><button class="play" data-say="${esc(words[0].t)}">${ICON_PLAY} ฟังคำ ${esc(words[0].t)}</button></div>`:""}
+    ${info.r?`<p class="tip"><b>ส่วนประกอบหลัก (部首)</b> ${esc(info.r)}</p>`:""}
+    ${strokePanel(ch)}
+    ${info.w&&info.w.length?`<div class="panel" style="display:flex;flex-direction:column;gap:6px"><h2>คำที่นำไปใช้กับคำอื่น</h2>${info.w.map(x=>`<p style="margin:0;font-size:15px"><span class="han" style="font-size:18px;font-weight:700">${esc(x.split(" ")[0])}</span> ${esc(x.split(" ").slice(1).join(" "))}</p>`).join("")}</div>`:""}
+    ${words.length?`<h2>คำในแอปที่ใช้ตัวนี้</h2><div class="list">${words.map(itemHTML).join("")}</div>`:""}`);
+  bindStroke(ch);
+  if(words[0])speak(words[0].t);
+}
+function strokePanel(ch){return`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><h2>ลำดับขีด ${esc(ch)}</h2>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div id="anim" style="width:200px;height:200px"></div><div class="row-flex"><button class="ghost" id="replay">▶ เล่นอีกครั้ง</button><button class="ghost" id="stepbtn">ทีละขีด</button></div></div>
+  <div id="steps" class="steps"></div><p class="hint" id="anim-msg"></p></div>
+  <div class="panel" style="display:flex;flex-direction:column;gap:10px"><div class="row-flex" style="justify-content:space-between"><h2>ลองเขียนตาม</h2><button class="ghost" id="qreset">เริ่มใหม่</button></div>
+  <div class="trace" id="qbox"></div><p class="hint" id="qmsg" style="text-align:center">ใช้นิ้วเขียนทีละขีดตามลำดับ ถ้าผิด 2 ครั้ง จะมีเส้นใบ้ให้</p></div>`}
+const STROKES={};const skP={};
+function loadStroke(ch){const i=SIDX[ch];if(i==null)return Promise.reject();if(STROKES[ch])return Promise.resolve(STROKES[ch]);
+  if(!skP[i])skP[i]=new Promise((ok,no)=>{const s=document.createElement("script");s.src="k"+i+".js";s.onload=ok;s.onerror=()=>{delete skP[i];no()};document.head.appendChild(s)});
+  return skP[i].then(()=>STROKES[ch])}
+let hwLoad=null;
+function loadHW(){if(window.HanziWriter)return Promise.resolve();if(hwLoad)return hwLoad;
+  hwLoad=new Promise((ok,no)=>{const s=document.createElement("script");s.src="hw.js";s.onload=ok;s.onerror=()=>{hwLoad=null;no()};document.head.appendChild(s)});return hwLoad}
+function strokeInfo(med){
+  const P=med.map(([x,y])=>[x,900-y]),a=P[0],b=P[P.length-1],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+  let turn=0,turnAt=-1;for(let i=1;i<P.length-1;i++){const u=[P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]],v=[P[i+1][0]-P[i][0],P[i+1][1]-P[i][1]];const an=Math.abs(Math.atan2(u[0]*v[1]-u[1]*v[0],u[0]*v[0]+u[1]*v[1]))*180/Math.PI;if(an>turn){turn=an;turnAt=i}}
+  const ang=Math.atan2(dy,dx)*180/Math.PI;
+  const col=a[0]<340?"ซ้าย":a[0]>680?"ขวา":"กลาง",row=a[1]<340?"บน":a[1]>600?"ล่าง":"กลาง",pos=row===col?"ตรงกลาง":"ด้าน"+row+(col==="กลาง"?"":"ค่อนไป"+col);
+  let name,dir;
+  if(turn>55&&L>120){const f=P[turnAt],s0=Math.atan2(f[1]-a[1],f[0]-a[0])*180/Math.PI,last=P[P.length-1],s1=Math.atan2(last[1]-f[1],last[0]-f[0])*180/Math.PI;
+    if(Math.abs(s0)<30&&s1>45)[name,dir]=["ขีดขวางแล้วหักลง (横折)","ลากไปทางขวา แล้วหักมุมลงล่าง"];
+    else if(s0>60&&s0<120&&s1<-30)[name,dir]=["ขีดตั้งมีขอ (竖钩)","ลากลงล่าง แล้วตวัดขึ้นเป็นขอ"];
+    else if(s0>60&&s0<120&&Math.abs(s1)<35)[name,dir]=["ขีดตั้งแล้วหักขวา (竖折)","ลากลงล่าง แล้วหักไปทางขวา"];
+    else if(Math.abs(s0)<30&&(s1<-30||s1>120))[name,dir]=["ขีดขวางมีขอ (横钩)","ลากไปทางขวา แล้วตวัดลงเป็นขอ"];
+    else[name,dir]=["ขีดหักมุม (折)","ลากตามแนว แล้วหักเปลี่ยนทิศ"]}
+  else if(L<170)[name,dir]=["จุด (点)","จิ้มสั้น ๆ เฉียงลง"];
+  else if(Math.abs(ang)<25)[name,dir]=["ขีดขวาง (横)","ลากจากซ้ายไปขวา"];
+  else if(ang>=65&&ang<=115)[name,dir]=["ขีดตั้ง (竖)","ลากจากบนลงล่าง"];
+  else if(ang>115)[name,dir]=["ขีดตกซ้าย (撇)","ลากเฉียงลงไปทางซ้าย"];
+  else if(ang>=25&&ang<65)[name,dir]=["ขีดตกขวา (捺)","ลากเฉียงลงไปทางขวา"];
+  else[name,dir]=["ขีดเชิด (提)","ลากเฉียงขึ้นไปทางขวา"];
+  return{name,dir,pos,a,b}
+}
+function stepSVG(d,k,size){const pts=d.medians[k].map(([x,y])=>[x,900-y]);const a=pts[0],z=pts[pts.length-1],p=pts[pts.length-2]||a,an=Math.atan2(z[1]-p[1],z[0]-p[0]);
+  const ah=`M${z[0]} ${z[1]} L${z[0]-60*Math.cos(an-0.5)} ${z[1]-60*Math.sin(an-0.5)} M${z[0]} ${z[1]} L${z[0]-60*Math.cos(an+0.5)} ${z[1]-60*Math.sin(an+0.5)}`;
+  return`<svg viewBox="0 0 1024 1024" width="${size}" height="${size}"><rect x="2" y="2" width="1020" height="1020" rx="80" fill="#fff" stroke="#e6e3dc" stroke-width="6"/><path d="M512 0V1024M0 512H1024" stroke="#f0ede6" stroke-width="6" stroke-dasharray="20 20"/>
+  <g transform="translate(0,900) scale(1,-1)">${d.strokes.map((s,i)=>`<path d="${s}" fill="${i<k?"#9a9389":i===k?"var(--accent)":"#efece6"}"/>`).join("")}</g>
+  <polyline points="${pts.map(q=>q.join(",")).join(" ")}" fill="none" stroke="#1d1c1a" stroke-width="14" stroke-dasharray="40 30" opacity=".55"/><path d="${ah}" stroke="#1d1c1a" stroke-width="16" stroke-linecap="round" opacity=".7"/>
+  <circle cx="${a[0]}" cy="${a[1]}" r="46" fill="#2f8a55"/><text x="${a[0]}" y="${a[1]+20}" text-anchor="middle" font-size="58" font-weight="800" fill="#fff" font-family="sans-serif">${k+1}</text></svg>`}
+function bindStroke(ch){
+  const box=$("#anim"),msg=$("#anim-msg"),steps=$("#steps");if(!box)return;msg.textContent="กำลังโหลดลำดับขีด…";
+  Promise.all([loadHW(),loadStroke(ch)]).then(([_,d])=>{if(!$("#anim")||!d)return;msg.textContent="";
+    const col=getComputedStyle(document.body).getPropertyValue("--accent").trim()||"#cf3b2a",loader=(c,ok)=>ok(d);
+    const w=HanziWriter.create(box,ch,{width:200,height:200,padding:8,showOutline:true,strokeAnimationSpeed:1,delayBetweenStrokes:300,strokeColor:col,charDataLoader:loader});
+    w.animateCharacter();$("#replay").onclick=()=>w.animateCharacter();
+    let si=-1;$("#stepbtn").onclick=()=>{si=(si+1)%d.strokes.length;w.hideCharacter();for(let i=0;i<=si;i++)w.animateStroke(i)};
+    steps.innerHTML=`<p class="hint" style="margin:0">จุดสีเขียว = จุดเริ่มเขียน ลูกศร = ทิศที่ลากไป · ทั้งหมด ${d.strokes.length} ขีด</p><div class="stepgrid">${d.medians.map((m,k)=>{const s=strokeInfo(m);return`<div class="step">${stepSVG(d,k,88)}<div><b>ขีด ${k+1} · ${esc(s.name)}</b><small>เริ่ม${esc(s.pos)} ${esc(s.dir)}</small></div></div>`}).join("")}</div>`;
+    const qb=$("#qbox"),qm=$("#qmsg");const mk=()=>{qb.innerHTML="";const q=HanziWriter.create(qb,ch,{width:qb.clientWidth||280,height:qb.clientHeight||280,padding:16,showCharacter:false,showOutline:true,outlineColor:"#e6e3dc",strokeColor:col,drawingColor:"#333",drawingWidth:22,showHintAfterMisses:2,highlightOnComplete:true,charDataLoader:loader});
+      q.quiz({onCorrectStroke:e=>{qm.textContent=`ถูกต้อง ขีด ${e.strokeNum+1} จาก ${d.strokes.length}`},onMistake:e=>{qm.textContent=`ยังไม่ใช่ ขีดที่ ${e.strokeNum+1} ลองดูจุดเริ่มสีเขียวในลำดับขีดด้านบน`},onComplete:e=>{qm.textContent=e.totalMistakes?`เขียนครบแล้ว พลาด ${e.totalMistakes} ครั้ง ลองอีกรอบให้เป๊ะ`:"เยี่ยมมาก เขียนถูกทุกขีด!";addXP(3);save()}})};
+    mk();$("#qreset").onclick=mk;
+  }).catch(()=>{msg.textContent="ยังไม่มีข้อมูลลำดับขีดของตัวนี้";const r=$("#replay");if(r)r.hidden=true;const sb=$("#stepbtn");if(sb)sb.hidden=true});
+}
+
+
+/* ---------- situation scenes ---------- */
+const SCN={s_friend:["เจอเพื่อนใหม่ที่คาเฟ่","#fff1e0",["☕","👋","🧁"]],s_travel:["ระหว่างเดินทาง","#e6f2ff",["✈️","🧳","🗺️"]],s_resto:["ที่ร้านอาหาร","#fff0ea",["🍜","🍽️","🥢"]],s_meet:["ในห้องประชุม","#eef0ff",["💼","📊","🗓️"]],s_nego:["โต๊ะเจรจา","#f0f7ea",["🤝","💰","📄"]],
+ s_shop:["ในร้านค้า","#fdeef6",["🛍️","👕","🏷️"]],s_health:["ที่โรงพยาบาล/ร้านยา","#e9f7f4",["🏥","💊","🌡️"]],s_phone:["คุยโทรศัพท์","#f2efff",["📱","☎️","📅"]],s_hotel:["ที่โรงแรม","#fff6e0",["🏨","🛎️","🔑"]],s_help:["เหตุฉุกเฉิน","#ffecec",["🚨","🆘","🚓"]],
+ s_talk:["คุยเล่นกับเพื่อน","#eef8ff",["💬","☀️","🎉"]],s_office:["ในออฟฟิศ","#f1f1f1",["💻","📧","⏰"]],
+ meet:["เจอคนครั้งแรก","#fff1e0",["👋","😊","☕"]],food:["ที่ร้านอาหาร","#fff0ea",["🍜","🥟","🍵"]],shop:["ซื้อของ ต่อราคา","#fdeef6",["🛍️","🏷️","💴"]],airport:["ที่สนามบิน","#e6f2ff",["✈️","🛂","🧳"]],travel:["ไปเที่ยว","#e6f2ff",["🗺️","🚄","📸"]],help:["ฟังไม่ทัน ขอให้ช่วย","#ffecec",["❓","🙏","👂"]],daily:["ชีวิตประจำวัน","#eef8ff",["🏠","⏰","🚶"]],polite:["มารยาท","#f0f7ea",["🙏","😊","👋"]]};
+const sceneCards=()=>deck().filter(c=>SCN[c.g]&&c.m);
+function sceneHTML(c){const sc=SCN[c.g]||["สถานการณ์","#f4f2ed",["💬","❓","✨"]];
+  return`<div class="scene" style="background:${sc[1]}"><div class="props">${sc[2].map((e,i)=>`<span style="left:${[8,70,40][i]}%;top:${[8,12,4][i]}%;animation-delay:${i*.5}s">${e}</span>`).join("")}</div>
+  <div class="sc-pk">${mascot("talk",86)}</div>
+  <div class="bubble"><small>${esc(sc[0])}</small><b>อยากพูดว่า “${esc(c.m)}”</b>${c.reg&&REG[c.reg]?`<span>แบบ${REG[c.reg]}</span>`:""}${c.sx?`<span>${c.sx==="m"?"You are a man":"You are a woman"}</span>`:""}<span>จะพูดว่าอะไร?</span></div></div>`}
+function startScenes(cs,title){const pool=(cs||sceneCards()).filter(c=>c.m);if(pool.length<4){toast("ประโยคในชุดนี้ยังน้อยเกินไป");return}startTest(pool,title||"สถานการณ์จำลอง","scene")}
+/* ---------- games ---------- */
+function viewGame(){
+  const v=$("#view"),L=DATA[lang],links=L.cards.filter(c=>c.gap),ln=learnedCards().length;
+  v.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px">
+    <div class="row-flex">${mascot("happy",72)}<p class="hint" style="flex:1">เล่นสั้น ๆ วันละรอบ ได้ XP และช่วยให้คำติดหัว Koel รอเล่นด้วยอยู่</p></div>
+    <button class="gcard" id="g-scene"><span class="gi">🎬</span><span><b>สถานการณ์จำลอง</b><small>Koel พาไปร้านอาหาร สนามบิน ห้องประชุม แล้วถามว่าจะพูดว่าอะไร</small></span></button>
+    ${lang==="zh"?`<button class="gcard" id="g-tone"><span class="gi">ā á ǎ à</span><span><b>เกมทายเสียง 4 เสียง</b><small>ฟังตัวจีนแล้วเลือกว่าเป็นเสียง 1 ¯ เสียง 2 ´ เสียง 3 ˇ เสียง 4 ˋ หรือเสียงเบา</small></span></button>`:""}
+    ${lang==="th"?`<button class="gcard" id="g-tone"><span class="gi">่ ้ ๊ ๋</span><span><b>Guess the tone</b><small>Listen to a word and pick its tone: mid, low, falling, high or rising</small></span></button>
+    <button class="gcard" id="g-sx"><span class="gi">👨👩</span><span><b>Who is speaking?</b><small>Listen and decide: a man (ครับ ผม) or a woman (ค่ะ คะ ฉัน)?</small></span></button>`:""}
+    <button class="gcard" id="g-chain"><span class="gi">${lang==="zh"?"接龙":lang==="th"?"ก→ฮ":"A→Z"}</span><span><b>เกมต่อคำ</b><small>${lang==="zh"?"เลือกคำที่ขึ้นต้นด้วยตัวสุดท้ายของคำก่อนหน้า (成语接龙 แบบง่าย)":lang==="th"?"Pick a word that starts with the last consonant of the previous word":"เลือกคำที่ขึ้นต้นด้วยตัวอักษรสุดท้ายของคำก่อนหน้า"} · 60 วินาที</small></span></button>
+    <button class="gcard" id="g-gap" ${links.length?"":"disabled"}><span class="gi">___</span><span><b>เกมเลือกเติมคำเชื่อม</b><small>${links.length} คำเชื่อม เช่น ${links.slice(0,3).map(c=>esc(c.t)).join(", ")}</small></span></button>
+    <button class="gcard" id="g-test" ${ln>=4?"":"disabled"}><span class="gi">♥♥♥</span><span><b>เกมทดสอบรวม</b><small>${ln>=4?"สุ่ม 10 ข้อจากที่เรียนแล้ว อ่าน ฟัง จับคู่":"เรียนให้ได้ 4 ประโยคก่อน"}</small></span></button>
+    <button class="gcard" id="g-known"><span class="gi">✓</span><span><b>ทวนกองจำได้แล้ว</b><small>${topicCards("known").length} ใบ · เช็กว่ายังจำได้จริงไหม</small></span></button>
+  </div>`;
+  $("#g-chain").onclick=startChain;
+  const gt=$("#g-tone");if(gt)gt.onclick=()=>startTest(toneCards(),lang==="th"?"Guess the tone":"ทายเสียงวรรณยุกต์ 4 เสียง","tone");
+  const gs=$("#g-sx");if(gs)gs.onclick=()=>startTest(L.cards.filter(c=>c.sx&&c.g!=="polite"),"Who is speaking?","sx");
+  $("#g-scene").onclick=()=>startScenes();
+  $("#g-gap").onclick=()=>startTest(links,"เติมคำเชื่อม",true);
+  $("#g-test").onclick=()=>startTest(shuffle(learnedCards()).slice(0,10),"ทดสอบรวม");
+  $("#g-known").onclick=()=>{const k=topicCards("known");if(k.length<4){toast("กด ✓ จำได้แล้ว ที่การ์ดอย่างน้อย 4 ใบก่อน");return}startTest(k,"ทวนกองจำได้แล้ว")};
+}
+/* word chain */
+let CH=null;
+function chainWords(){
+  const out=[];
+  for(const c of deck()){
+    let w=c.t.replace(/[。，！？、,.!?;:"'“”‘’()（）…]/g,"").trim();
+    if(lang==="zh"){if(w.length<2||w.length>6||![...w].every(isHan))continue;out.push({c,w,f:w[0],l:w[w.length-1]})}
+    else if(lang==="th"){if(/\s/.test(w)||!/^[\u0E00-\u0E7F]+$/.test(w)||w.length>8)continue;const cs=w.match(/[ก-ฮ](?![์])/g);if(!cs||cs.length<2)continue;out.push({c,w,f:cs[0],l:cs[cs.length-1]})}
+    else{w=w.replace(/^(der|die|das)\s+/i,"");const ws=w.split(/\s+/);if(ws.length>3||!w)continue;
+      const f=(w.match(/[a-zäöüßàâçéèêëîïôûùÿœæ]/i)||[""])[0].toLowerCase(),l=(w.match(/[a-zäöüßàâçéèêëîïôûùÿœæ](?=[^a-zäöüßàâçéèêëîïôûùÿœæ]*$)/i)||[""])[0].toLowerCase();if(!f||!l)continue;out.push({c,w,f,l})}
+  }
+  return out;
+}
+function startChain(){
+  const words=chainWords(),by={};for(const x of words)(by[x.f]=by[x.f]||[]).push(x);
+  const starts=words.filter(x=>(by[x.l]||[]).some(y=>y!==x));
+  if(starts.length<3){toast("คำในคลังยังน้อยเกินไปสำหรับเกมนี้");return}
+  CH={words,by,cur:starts[Math.floor(Math.random()*starts.length)],chain:[],used:new Set(),score:0,hearts:3,best:0,run:0,end:Date.now()+60000,timer:null,fb:null};
+  CH.chain.push(CH.cur);CH.used.add(CH.cur.w);
+  $("#study").hidden=false;document.body.style.overflow="hidden";
+  chainQ();CH.timer=setInterval(()=>{const t=$("#ctime");const left=Math.max(0,Math.ceil((CH.end-Date.now())/1000));if(t)t.textContent=left+" วิ";if(left<=0)endChain()},250);
+  speak(CH.cur.c.t);
+}
+function chainQ(){
+  const need=CH.cur.l;let nexts=(CH.by[need]||[]).filter(x=>!CH.used.has(x.w));
+  if(!nexts.length){/* dead end: jump to a fresh word */const st=CH.words.filter(x=>!CH.used.has(x.w)&&(CH.by[x.l]||[]).some(y=>!CH.used.has(y.w)&&y!==x));
+    if(!st.length)return endChain();CH.cur=st[Math.floor(Math.random()*st.length)];CH.used.add(CH.cur.w);CH.chain.push(CH.cur);CH.fb={cls:"",msg:"ทางตัน! เริ่มคำใหม่ให้"};return chainQ()}
+  const right=nexts[Math.floor(Math.random()*nexts.length)];
+  const wrong=shuffle(CH.words.filter(x=>x.f!==need&&x.w!==right.w)).slice(0,3);
+  CH.opts=shuffle([right,...wrong]);CH.right=right;drawChain();
+}
+function drawChain(){
+  const c=CH.cur,w=c.w,mark=lang==="zh"?esc(w.slice(0,-1))+"<mark>"+esc(w.slice(-1))+"</mark>":(()=>{const i=w.toLowerCase().lastIndexOf(c.l);return esc(w.slice(0,i))+"<mark>"+esc(w.slice(i,i+1))+"</mark>"+esc(w.slice(i+1))})();
+  $("#study").innerHTML=`<div class="top"><button class="x" id="cq" aria-label="ออก">×</button><div style="flex:1;font-weight:800;color:var(--xp);font-variant-numeric:tabular-nums">${CH.score} คะแนน</div><span class="combo hearts" style="color:var(--again)">${"♥".repeat(CH.hearts)+"♡".repeat(3-CH.hearts)}</span><span class="combo" id="ctime">${Math.max(0,Math.ceil((CH.end-Date.now())/1000))} วิ</span></div>
+  <div class="stage" id="stage"><div class="row-flex" style="justify-content:space-between"><span class="mode">เกมต่อคำ</span>${mascot(CH.fb?(CH.fb.cls==="good"?"happy":CH.fb.cls==="bad"?"oops":"think"):"think",54)}</div>
+    <div class="chain">${CH.chain.slice(-6).map(x=>`<span class="han">${esc(x.w)}</span>`).join("")}</div>
+    <p class="word-now han">${mark}</p><p class="hint" style="text-align:center">${esc(c.c.m)} · ต่อด้วยคำที่ขึ้นต้นด้วย <b style="color:var(--accent)">${esc(lang==="zh"?c.l:c.l.toUpperCase())}</b></p>
+    <div class="opts">${CH.opts.map((o,i)=>`<button class="opt" data-ci="${i}"><span class="han" style="font-weight:700">${esc(o.w)}</span><br><small style="color:var(--muted)">${esc(o.c.m)}</small></button>`).join("")}</div></div>
+  <div class="foot ${CH.fb?CH.fb.cls:""}">${CH.fb?`<p class="fbline">${CH.fb.msg}</p>`:`<p class="hint" style="text-align:center">ต่อติดกันได้ ${CH.run} คำ</p>`}</div>`;
+  $("#cq").onclick=()=>{clearInterval(CH.timer);CH=null;closeStudy()};
+  document.querySelectorAll("[data-ci]").forEach(b=>b.onclick=()=>{const o=CH.opts[+b.dataset.ci];
+    if(o===CH.right){CH.run++;CH.best=Math.max(CH.best,CH.run);const pts=10+CH.run*2;CH.score+=pts;CH.fb={cls:"good",msg:"ต่อได้! +"+pts};CH.cur=o;CH.used.add(o.w);CH.chain.push(o);speak(o.c.t);chainQ()}
+    else{CH.hearts--;CH.run=0;CH.fb={cls:"bad",msg:"ไม่ใช่ คำที่ต่อได้คือ "+esc(CH.right.w)};if(CH.hearts<=0)return endChain();chainQ()}});
+}
+function endChain(){
+  if(!CH)return;clearInterval(CH.timer);const xp=Math.round(CH.score/4);addXP(xp);bump();
+  const s=S();s.tests=(s.tests||[]).concat([{d:Date.now(),title:"เกมต่อคำ",pct:Math.min(100,CH.best*10),score:CH.score,n:CH.chain.length}]).slice(-40);save();
+  const used=CH.chain.slice(-12);
+  $("#study").innerHTML=`<div class="top"><button class="x" id="cq" aria-label="ปิด">×</button><div class="bar"><i style="width:100%"></i></div><span class="combo"></span></div>
+  <div class="stage"><div class="done"><div class="pkrow">${mascot(CH.score>=80?"win":"happy",120)}</div><span class="mode">เกมต่อคำ</span><div class="xp pop">${CH.score}</div><div style="font-weight:800;font-size:20px">คะแนน · +${xp} XP</div>
+  <div class="grid"><div class="st"><b>${CH.chain.length}</b><small>คำในโซ่</small></div><div class="st"><b>${CH.best}</b><small>ต่อติดกันสูงสุด</small></div><div class="st"><b class="hearts" style="color:var(--again)">${"♥".repeat(Math.max(0,CH.hearts))}</b><small>หัวใจที่เหลือ</small></div></div></div>
+  <h2>คำในรอบนี้</h2><div class="list">${used.map(x=>itemHTML(x.c)).join("")}</div></div>
+  <div class="foot"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="primary" id="cagain">เล่นอีกรอบ</button><button class="ghost" id="cclose">กลับ</button></div></div>`;
+  CH=null;$("#cq").onclick=closeStudy;$("#cclose").onclick=closeStudy;$("#cagain").onclick=startChain;
+  if(xp>=20)confetti();
+}
+
+/* ---------- chat ---------- */
+const SCENES=[
+  {id:"meet",tp:"s_friend",th:"เจอเพื่อนใหม่",en:"Meeting someone new at a café; you are a friendly local who asks the learner's name, where they are from, their job and hobbies, and suggests exchanging contacts."},
+  {id:"travel",tp:"s_travel",th:"เดินทาง ถามทาง",en:"Traveling; you play hotel receptionist, taxi driver or a passer-by. The learner checks in, asks directions or buys a ticket."},
+  {id:"food",tp:"s_resto",th:"ร้านอาหาร",en:"Restaurant; you are the waiter: greet, take the order, ask about spice level, allergies and drinks, then bring the bill."},
+  {id:"meeting",tp:"s_meet",th:"ประชุมงาน",en:"A short work meeting; you are a colleague/manager. Open the meeting, ask the learner's opinion, ask for clarification and agree on next steps. Use polite workplace language."},
+  {id:"nego",tp:"s_nego",th:"เจรจาต่อรอง",en:"A business negotiation; you are a supplier. Discuss price, quantity, delivery date and discount; make counter-offers and try to close the deal politely."}
+];
+let scene=null,log=[],sampler,busy=false;
+async function getSampler(){if(sampler!==undefined)return sampler;try{sampler=window.claude?await claude.use("sample"):null}catch(e){sampler=null}return sampler}
+function viewChat(){
+  const v=$("#view");
+  v.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+    <p class="hint">เลือกสถานการณ์ แล้วคุยกับคู่ฝึก พิมพ์ภาษา${DATA[lang].name}${lang==="zh"?" พินอินไม่ใส่วรรณยุกต์":""} หรือพิมพ์ไทยตอนนึกไม่ออกก็ได้ คู่ฝึกจะช่วยแก้ให้</p>
+    <div class="chips">${SCENES.map(s=>`<button class="chip-btn" data-sc="${s.id}" aria-pressed="${scene===s.id}">${s.th}</button>`).join("")}</div>
+    <div class="chat" id="chat"></div><div class="sugg" id="sugg"></div>
+    <form class="composer" id="comp"><input id="chat-in" autocomplete="off" placeholder="พิมพ์คำตอบ"><button class="primary" type="submit">ส่ง</button></form></div>`;
+  v.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{scene=b.dataset.sc;log=[];viewChat();ask()});
+  $("#comp").onsubmit=e=>{e.preventDefault();const t=$("#chat-in").value.trim();if(!t||busy)return;if(!scene){scene=SCENES[0].id}log.push({role:"me",text:t});$("#chat-in").value="";addXP(3);save();ask()};
+  drawChat();
+}
+function drawChat(){
+  const el=$("#chat");if(!el)return;
+  if(!scene){el.innerHTML=`<div class="empty">เลือกสถานการณ์ด้านบน คู่ฝึกจะเริ่มพูดก่อนด้วยประโยคง่าย ๆ พร้อมคำแปล คำอ่าน และตัวเลือกว่าควรตอบอะไร คุยหนึ่งครั้งได้ 3 XP</div>`;$("#sugg").innerHTML="";return}
+  el.innerHTML="";
+  for(const m of log){const d=document.createElement("div");d.className="msg "+(m.role==="me"?"me":"bot");
+    const add=(c,t)=>{if(!t)return;const x=document.createElement("div");x.className=c;x.textContent=t;d.appendChild(x)};
+    if(m.role==="me")add("",m.text);
+    else{add("fb",m.feedback_th);add("mt han",m.reply);add("mr",m.roman);add("mp",m.thai_pron);add("mm",m.meaning_th);
+      if(hasTTS&&m.reply){const t=document.createElement("div");t.className="audio";t.style.justifyContent="flex-start";t.innerHTML=`<button class="play" data-say="${esc(m.reply)}">${ICON_PLAY} ฟัง</button><button class="play" data-say="${esc(m.reply)}" data-slow="1">${ICON_SLOW} ช้า</button>`;d.appendChild(t)}}
+    el.appendChild(d)}
+  if(busy){const d=document.createElement("div");d.className="msg bot";d.innerHTML='<div class="mm">กำลังพิมพ์…</div>';el.appendChild(d)}
+  const last=[...log].reverse().find(m=>m.role==="bot"),sg=$("#sugg");sg.innerHTML="";
+  if(last&&last.suggestions&&!busy){const p=document.createElement("p");p.className="hint";p.textContent="ตอบแบบนี้ได้ แตะเพื่อใส่ในช่องพิมพ์ แล้วพูดออกเสียงก่อนส่ง";sg.appendChild(p);
+    for(const s of last.suggestions.slice(0,3)){const b=document.createElement("button");b.type="button";const bb=document.createElement("b");bb.className="han";bb.textContent=s.text;b.appendChild(bb);b.appendChild(document.createTextNode((s.roman?s.roman+" · ":"")+(s.meaning_th||"")));b.onclick=()=>{$("#chat-in").value=s.text;speak(s.text)};sg.appendChild(b)}}
+}
+function prompt(){
+  const L=DATA[lang],sc=SCENES.find(s=>s.id===scene),zh=lang==="zh",target=LNAME[lang];
+  const learned=deck().filter(c=>st(c.id)).map(c=>c.t).slice(0,80);
+  const known=(learned.length?learned:deck().filter(c=>c.g===sc.tp).map(c=>c.t)).join(" | ");
+  const tr=log.map(m=>m.role==="me"?"LEARNER: "+m.text:"PARTNER: "+m.reply).join("\n")||"(no messages yet; open the conversation with a short greeting that fits the scene)";
+  return`You are a warm, patient conversation partner for a Thai native speaker who is a beginner in ${target} (HSK1-2 / CEFR A1-A2). Their goal is to actually communicate.
+Scene: ${sc.en}
+Phrases the learner already knows (reuse them as much as possible): ${known}
+Rules:
+- Stay in role. Reply in ${target} only, 1-2 very short sentences, beginner words, and end with a question so the learner must answer.
+- The learner may write in ${target}${zh?", in pinyin without tones,":""} or in Thai when stuck. If they used Thai or made a mistake, write a short, kind correction in Thai in feedback_th showing the correct ${target} sentence; otherwise feedback_th is "".
+- thai_pron = pronunciation in Thai script the way Thai learners write it (e.g. ${zh?"หนี่ ห่าว":lang==="de"?"วี เกทส์":"ไนซ์ ทู มีท ยู"}).
+- roman = ${zh?"Hanyu Pinyin with tone marks":lang==="de"?"simple English-style guide like 'vee gayts'":"the same English sentence with the stressed words in CAPITALS"}.
+- suggestions = 2 or 3 short natural things the learner could say next, each with roman and Thai meaning.
+Return ONLY JSON: {"reply":"","roman":"","thai_pron":"","meaning_th":"","feedback_th":"","suggestions":[{"text":"","roman":"","meaning_th":""}]}
+
+Conversation so far:
+${tr}`;
+}
+async function ask(){
+  const s=await getSampler();
+  if(!s){log.push({role:"bot",meaning_th:"การฝึกคุยต้องเปิดหน้านี้ผ่าน Claude ขณะลงชื่อเข้าใช้ ส่วนรอบทบทวนและคลังประโยคใช้ได้ตามปกติ"});drawChat();return}
+  busy=true;drawChat();
+  try{const r=await s.json(prompt(),{cache:false});busy=false;log.push(Object.assign({role:"bot"},r));drawChat();if(r.reply)speak(r.reply)}
+  catch(e){busy=false;log.push({role:"bot",meaning_th:e&&e.code==="not_granted"?"ยังไม่ได้อนุญาตให้หน้านี้ถาม Claude ส่งอีกครั้งแล้วเลือกอนุญาต":e&&e.code==="rate_limited"?"ส่งถี่ไปหน่อย รอสักครู่แล้วลองใหม่":"คู่ฝึกตอบไม่สำเร็จ ลองส่งอีกครั้ง"});drawChat()}
+}
+
+/* ---------- shell ---------- */
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem(LS+"-lang",lang)}catch(e){};libTopic=null;libAdd=false;scene=null;log=[];editGoal=false;alphaShow=120;regF="all";render()});
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{const same=tab===b.dataset.tab;tab=b.dataset.tab;libAdd=false;if(tab!=="lib"||same)libTopic=null;render();scrollTo(0,0)});
+/* ---------- password gate ---------- */
+const PWK="nongpak-pw";
+async function decryptData(pw){
+  const b64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(ENC.s),iterations:ENC.n,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(ENC.iv)},key,b64(ENC.d));
+  const ds=new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(ds).text());
+}
+async function tryUnlock(pw){const o=await decryptData(pw);DATA=o.DATA;ALPHA=o.ALPHA;HANZI=o.HANZI;AIDX=o.AIDX;window.CHARINFO=o.CHARINFO||{};try{localStorage.setItem(PWK,pw)}catch(e){};const g=$("#gate");if(g)g.remove();document.body.style.overflow="";render()}
+async function gateBoot(){
+  let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
+  if(saved){try{await tryUnlock(saved);return}catch(e){try{localStorage.removeItem(PWK)}catch(_){}}}
+  const g=document.createElement("div");g.id="gate";document.body.appendChild(g);document.body.style.overflow="hidden";
+  const draw=(st,msg)=>{g.innerHTML=`<form class="gbox" id="gform" autocomplete="off">${mascot(st,120)}<h1>Koel</h1><p class="hint">เรียนจีน เยอรมัน อังกฤษ ไทย แบบพูดได้จริง</p>
+    <label for="gpw" class="glab">รหัสผ่านเข้าใช้งาน</label><input id="gpw" type="password" autocomplete="current-password" placeholder="กรอกรหัสผ่าน" required>
+    <p class="gerr" role="alert">${msg||""}</p><button class="primary" type="submit">เข้าใช้งาน</button>
+    <p class="copy">© 2026 Koel สงวนลิขสิทธิ์</p></form>`;
+    $("#gform").onsubmit=async e=>{e.preventDefault();const pw=$("#gpw").value;const btn=g.querySelector("button");btn.disabled=true;btn.textContent="กำลังเปิด…";
+      try{await tryUnlock(pw)}catch(err){draw("oops","รหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง")}};
+    setTimeout(()=>{const i=$("#gpw");if(i)i.focus()},50)};
+  draw("idle");
+}
+</script>
+<script>
+/*__EXTJS__*/
+</script>
+
+</body>
+</html>
