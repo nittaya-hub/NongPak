@@ -50,7 +50,7 @@ function genderSpeak(t,slow,g){if(voiceMissing())warnNoVoice();
   try{player.pause()}catch(e){}
   const u=new SpeechSynthesisUtterance((lang==="th"?thRespell(t):String(t)).replace(/……|…|\.\.\./g," "));u.lang=DATA[lang].voice;
   const{v,shift}=pickVoice(g);if(v)u.voice=v;const rate=vset().rate||1;u.rate=(slow?.6:.95)*rate;
-  if(shift){u.pitch=g==="m"?.7:1.25}
+  /* no fake pitch shift: it made the "male" voice sound broken and unclear */
   ttsSpeak(u)}
 
 
@@ -83,7 +83,7 @@ function openSettings(){
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่านภาษา"+DATA[lang].name,"Voice for "+({zh:"Chinese",de:"German",en:"English",fr:"French",th:"Thai"})[lang])}</h3>
       <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?TX("อัตโนมัติ","Automatic"):TX("เสียงในแอป (เดิม)","Built-in voice")],["f",TX("เสียงผู้หญิง","Female voice")],["m",TX("เสียงผู้ชาย","Male voice")]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
-      ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะปรับโทนเสียงให้แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app shifts the pitch instead. You can add voices for free in your device settings (see below).")}</p>`}
+      ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะใช้เสียงที่มีอยู่แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app uses the voice it has. You can add voices for free in your device settings (see below).")}</p>`}
       <div class="field"><span>${TX("เลือกเสียง","Voice")}</span><div class="vlist" role="radiogroup">${[{name:"",label:TX("ให้แอปเลือกเสียงที่ดีที่สุด","Let the app pick the best voice")}].concat(list.map(v=>({name:v.name,label:v.name.replace(/\s*\(.*\)\s*$/,""),g:vGender(v),q:vQuality(v)===2}))).map(v=>`<button type="button" class="vopt" role="radio" data-vn="${esc(v.name)}" aria-checked="${(cfg.name||"")===v.name}"><span class="vdot"></span><span style="flex:1;min-width:0">${esc(v.label)}${v.q?` <small class="vq">${TX("คุณภาพสูง","high quality")}</small>`:""}</span>${v.g?`<small class="vg">${v.g==="f"?TX("หญิง","female"):TX("ชาย","male")}</small>`:""}${v.name?`<span class="vplay" data-vtest="${esc(v.name)}" aria-label="ฟัง">${ICON_PLAY}</span>`:""}</button>`).join("")}</div></div>`:""}
       <div class="field"><span>${TX("ความเร็วในการพูด","Speaking speed")}</span><div class="seg2" role="group">${[[0.8,TX("ช้า","Slow")],[0.9,TX("ค่อนข้างช้า","A bit slow")],[1,TX("ปกติ","Normal")],[1.1,TX("เร็ว","Fast")]].map(([r,l])=>`<button type="button" data-rate="${r}" aria-pressed="${Math.abs((cfg.rate||1)-r)<.01}">${l}</button>`).join("")}</div></div>
       <button class="ghost" id="s-test">▶ ${TX("ทดลองฟัง","Try it")}</button>
@@ -153,7 +153,10 @@ function animate(svgEl,lo,vb,thai,onDone){const acc=getComputedStyle(document.bo
     const s=lo.strokes[k];const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",pathD(s));p.setAttribute("fill","none");p.setAttribute("stroke",acc);p.setAttribute("stroke-width",sw);p.setAttribute("stroke-linecap","round");p.setAttribute("stroke-linejoin","round");
     g.appendChild(p);const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
     g.insertAdjacentHTML("beforeend",`<circle cx="${s[0][0]}" cy="${s[0][1]}" r="4" fill="#2f8a55"/><text x="${s[0][0]}" y="${s[0][1]+1.9}" font-size="5.2" text-anchor="middle" fill="#fff" font-weight="800" font-family="sans-serif">${k+1}</text>`);
-    const dur=Math.max(350,L*14);p.getBoundingClientRect();p.style.transition=`stroke-dashoffset ${dur}ms linear`;p.style.strokeDashoffset=0;k++;setTimeout(one,dur+260)};
+    /* drawn frame by frame in JS: CSS transitions are switched off when the device has "reduce motion" on */
+    const dur=Math.max(350,L*14),t0=performance.now();k++;
+    const step=now=>{if(svgEl._tok!==tok)return;const u=Math.min(1,(now-t0)/dur);p.style.strokeDashoffset=L*(1-u);
+      if(u<1)requestAnimationFrame(step);else setTimeout(one,260)};requestAnimationFrame(step)};
   one()}
 /* practice: dotted letter, numbered start dot, checks each stroke */
 function resample(pts,n){const d=[0];for(let i=1;i<pts.length;i++)d.push(d[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const L=d[d.length-1]||1,out=[];
