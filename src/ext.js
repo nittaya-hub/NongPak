@@ -19,19 +19,19 @@ render=function(){document.body.dataset.tab=tab;_render();applyUI();const rb=$("
 $("#gear").onclick=()=>openSettings();
 
 /* =================== VOICE (item 3) =================== */
-const VKEY="koel-voice";
+const VKEY="koel-voice2";
 let VS={};try{VS=JSON.parse(localStorage.getItem(VKEY)||"{}")}catch(e){}
 /* female/male and speed are chosen once and apply to every language; a specific voice name stays per language */
 let VDRAFT=null;   /* unsaved choice in Settings: used only for "Try it" until the learner presses Save */
-const vsaved=()=>Object.assign({mode:lang==="th"?"f":"app",name:"",rate:1},VS[lang]||{},VS._g?{mode:VS._g}:{},VS._rate?{rate:VS._rate}:{});
+const vsaved=()=>Object.assign({mode:"pack",pv:"f1",name:"",rate:1},VS[lang]||{},VS._g?{mode:VS._g}:{},VS._pv?{pv:VS._pv}:{},VS._rate?{rate:VS._rate}:{});
 const vset=()=>VDRAFT?Object.assign(vsaved(),VDRAFT,VDRAFT.names?{name:VDRAFT.names[lang]||""}:{}):vsaved();
-function saveV(o){if("mode" in o){VS._g=o.mode;for(const l in VS)if(l[0]!=="_"&&VS[l])VS[l].name=""}
+function saveV(o){if("pv" in o)VS._pv=o.pv;if("mode" in o){VS._g=o.mode;for(const l in VS)if(l[0]!=="_"&&VS[l])VS[l].name=""}
   if("rate" in o)VS._rate=o.rate;
   VS[lang]=Object.assign({},VS[lang]||{},{name:"name" in o?o.name:(VS[lang]||{}).name||""});
   try{localStorage.setItem(VKEY,JSON.stringify(VS))}catch(e){}}
 /* saved voice settings travel with the account (inside the synced progress) */
-function voiceToStore(){try{store.vs=Object.assign({},VS,{at:Date.now()});save()}catch(e){}}
-function voiceFromStore(){try{if(store.vs&&(store.vs.at||0)>(VS.at||0)){VS=Object.assign({},store.vs);localStorage.setItem(VKEY,JSON.stringify(VS))}}catch(e){}}
+function voiceToStore(){try{store.vs2=Object.assign({},VS,{at:Date.now()});save()}catch(e){}}
+function voiceFromStore(){try{if(store.vs2&&(store.vs2.at||0)>(VS.at||0)){VS=Object.assign({},store.vs2);localStorage.setItem(VKEY,JSON.stringify(VS))}}catch(e){}}
 const FEMALE=/female|woman|หญิง|kanya|narisa|premwadee|achara|pattara|tingting|ting-ting|meijia|mei-jia|sinji|lili|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomo|huihui|yaoyao|anna|petra|helena|katja|hedda|amala|marlene|vicki|samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|aria|jenny|serena|fiona|kate|nicky|emma|michelle|sonia|libby|natasha|amelie|amélie|audrey|marie|aurelie|aurélie|julie|hortense|denise|virginie|celine|céline|eloise|vivienne|brigitte|seraphina|elke|gisela|louisa|maja|sara|siri female|flo\b|grandma|sandy|shelley|kathy|princess|zarvox|mei-jia|sin-ji|yuna|alice|joana|monica|paulina|zuzana/i;
 const MALE=/\bmale\b|\bman\b|ชาย|niwat|li-mu|limu|yunxi|yunyang|yunjian|yunhao|kangkang|markus|yannick|stefan|conrad|killian|kasper|florian|ralf|alex\b|daniel|fred\b|tom\b|aaron|arthur|rishi|oliver|gordon|david|mark\b|guy\b|ryan|christopher|eric\b|brian|andrew|thomas|nicolas|henri|paul\b|claude|remy|rémy|jacques|alain|maurice|jerome|yves|siri male|eddy|reed|rocko|grandpa|ralph|albert|junior|bruce|jacques|bahh|boing|xander|luca|jorge|diego/i;
 const vGender=v=>FEMALE.test(v.name||"")?"f":MALE.test(v.name||"")&&!/female/i.test(v.name)?"m":"";
@@ -43,12 +43,32 @@ function pickVoice(g){const vs=langVoices(),cfg=vset();
   if(!g)return{v:vs[0],shift:false};
   const hit=vs.find(v=>vGender(v)===g);if(hit)return{v:hit,shift:false};
   return{v:vs.find(v=>vGender(v)!==(g==="m"?"f":"m"))||vs[0],shift:true};}
+const PACKN={"th": {"f": ["Premwadee", "Ava", "Emma"], "m": ["Niwat", "Andrew", "Brian"]}, "zh": {"f": ["Xiaoxiao", "Xiaoyi", "Ava"], "m": ["Yunxi", "Yunjian", "Yunyang"]}, "de": {"f": ["Katja", "Amala", "Seraphina"], "m": ["Conrad", "Killian", "Florian"]}, "en": {"f": ["Ava", "Emma", "Jenny"], "m": ["Andrew", "Brian", "Guy"]}, "fr": {"f": ["Denise", "Eloise", "Vivienne"], "m": ["Henri", "Remy", "Gerard"]}};
+/* ===== in-app voice pack: the same natural voices on every device (pre-recorded files in v/<lang>-<f1..m3>/) ===== */
+const packId=(l,pv)=>(l||lang)+"-"+(pv||vset().pv||"f1");
+const PIDX={},PURL=new Map();
+function packIdx(id){if(PIDX[id]!==undefined)return PIDX[id];PIDX[id]=null;
+  fetch("v/"+id+".json").then(r=>r.ok?r.json():[]).then(a=>{PIDX[id]=new Set(a)}).catch(()=>{PIDX[id]=undefined});return null}
+const packHas=(t,id)=>{const ix=packIdx(id);return !!(ix&&ix.has(hk(id.slice(0,2)+"|"+t)))};
+async function packSrc(url){if(PURL.has(url))return PURL.get(url);let r=null;
+  try{if("caches" in window){const c=await caches.open(OFFC);r=await c.match(url);if(!r){r=await fetch(url);if(r.ok)c.put(url,r.clone())}}else r=await fetch(url)}catch(e){r=null}
+  if(!r||!r.ok)return null;const u=URL.createObjectURL(await r.blob());PURL.set(url,u);return u}
+let packTok=0;
+function packSpeak(t,slow,id){const tok=++packTok,url="v/"+id+"/"+hk(id.slice(0,2)+"|"+t)+".mp3";
+  try{player.pause()}catch(e){}try{if(webTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}catch(e){}
+  packBusy=true;
+  packSrc(url).then(src=>{packBusy=false;if(tok!==packTok)return;if(!src)return fallbackSpeak(t,slow);playSrc(src,t,slow);try{player.playbackRate=(slow?.7:1)*(vset().rate||1)}catch(e){}})}
+let packBusy=false;
 const _speak=speak;
 let lastSay={t:"",at:0};
-speak=function(t,slow){if(!t)return;const now=Date.now();
-  if(lang==="th"&&(vset().mode==="f"||vset().mode==="m")&&voiceMissing()&&AIDX[hk(lang+"|"+t)]!=null){return _speak(t,slow)}if(t===lastSay.t&&!!slow===lastSay.s&&now-lastSay.at<1200)return;lastSay={t,s:!!slow,at:now};const m=vset().mode;
+function fallbackSpeak(t,slow){const cfg=vset();const m=cfg.mode==="pack"?(cfg.pv||"f1")[0]:cfg.mode;
+  if(lang==="th"&&(m==="f"||m==="m")&&voiceMissing()&&AIDX[hk(lang+"|"+t)]!=null)return _speak(t,slow);
   if(m==="f"||m==="m"||(lang==="fr"&&m==="app"&&!AIDX[hk(lang+"|"+t)]))return genderSpeak(t,slow,m==="app"?"":m);
-  return _speak(t,slow)};
+  return _speak(t,slow)}
+speak=function(t,slow){if(!t)return;const now=Date.now();
+  if(t===lastSay.t&&!!slow===lastSay.s&&now-lastSay.at<1200)return;lastSay={t,s:!!slow,at:now};
+  const cfg=vset();if(cfg.mode==="pack"){const id=packId(lang,cfg.pv);if(packHas(t,id))return packSpeak(t,slow,id)}
+  return fallbackSpeak(t,slow)};
 const VNAME={zh:["จีน","Chinese"],de:["เยอรมัน","German"],en:["อังกฤษ","English"],fr:["ฝรั่งเศส","French"],th:["ไทย","Thai"]};
 let noVoiceWarned={};
 function voiceMissing(){if(!webTTS)return true;lv();if(!voices.length)return false;const two=((DATA[lang]||{}).voice||"").slice(0,2).toLowerCase();return !voices.some(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(two))}
@@ -94,20 +114,27 @@ function openSettings(){
     <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>${TX("ดูวิธีเริ่มใช้งานอีกครั้ง","Watch the quick guide again")}</b><small>${TX("แนะนำการใช้แอปสั้น ๆ","How to use Koel")}</small></span></button>
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่าน (ใช้กับทุกภาษา)","Voice (all languages)")}</h3>
+      <div class="field"><span>${TX("เสียงในแอป · ชัด เป็นธรรมชาติ ได้ยินเหมือนกันทุกเครื่อง","In-app voices · clear, natural, the same on every device")}</span><div class="vlist" role="radiogroup">${["f1","f2","f3","m1","m2","m3"].map(pv=>`<button type="button" class="vopt" role="radio" data-pv="${pv}" aria-checked="${cfg.mode==="pack"&&(cfg.pv||"f1")===pv}"><span class="vdot"></span><span style="flex:1;min-width:0">${pv[0]==="f"?TX("หญิง","Female"):TX("ชาย","Male")} ${pv[1]} · ${esc((PACKN[lang]||PACKN.en)[pv[0]][+pv[1]-1])}</span><small class="vg">${pv[0]==="f"?TX("หญิง","female"):TX("ชาย","male")}</small><span class="vplay" data-pvt="${pv}" aria-label="ฟัง">${ICON_PLAY}</span></button>`).join("")}</div></div>
+      <details class="vdev" ${cfg.mode!=="pack"?"open":""}><summary>${TX("ใช้เสียงที่ติดมากับเครื่องแทน","Use your device's own voices instead")}</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">
       <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?TX("อัตโนมัติ","Automatic"):TX("เสียงในแอป (เดิม)","Built-in voice")],["f",TX("เสียงผู้หญิง","Female voice")],["m",TX("เสียงผู้ชาย","Male voice")]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
       ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะใช้เสียงที่มีอยู่แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app uses the voice it has. You can add voices for free in your device settings (see below).")}</p>`}
       <div class="field"><span>${TX("เลือกเสียง","Voice")}</span><div class="vlist" role="radiogroup">${[{name:"",label:TX("ให้แอปเลือกเสียงที่ดีที่สุด","Let the app pick the best voice")}].concat(list.map(v=>({name:v.name,label:v.name.replace(/\s*\(.*\)\s*$/,""),g:vGender(v),q:vQuality(v)===2}))).map(v=>`<button type="button" class="vopt" role="radio" data-vn="${esc(v.name)}" aria-checked="${(cfg.name||"")===v.name}"><span class="vdot"></span><span style="flex:1;min-width:0">${esc(v.label)}${v.q?` <small class="vq">${TX("คุณภาพสูง","high quality")}</small>`:""}</span>${v.g?`<small class="vg">${v.g==="f"?TX("หญิง","female"):TX("ชาย","male")}</small>`:""}${v.name?`<span class="vplay" data-vtest="${esc(v.name)}" aria-label="ฟัง">${ICON_PLAY}</span>`:""}</button>`).join("")}</div></div>`:""}
+      <p class="hint" style="margin:0">${TX("เสียงฟรีทั้งหมด ใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ Enhanced หรือ Premium (ฟรี) · Mac ไปที่ การตั้งค่าระบบ › การช่วยการเข้าถึง › เนื้อหาที่พูด · Windows/Edge มีเสียง Natural ให้อัตโนมัติ","All voices are free and come from your device. For more natural voices: on iPad/iPhone go to Settings › Accessibility › Spoken Content › Voices and download an Enhanced or Premium voice (free) · on Mac: System Settings › Accessibility › Spoken Content · Windows/Edge has Natural voices built in.")}</p>
+      </div></details>
       <div class="field"><span>${TX("ความเร็วในการพูด","Speaking speed")}</span><div class="seg2" role="group">${[[0.8,TX("ช้า","Slow")],[0.9,TX("ค่อนข้างช้า","A bit slow")],[1,TX("ปกติ","Normal")],[1.1,TX("เร็ว","Fast")]].map(([r,l])=>`<button type="button" data-rate="${r}" aria-pressed="${Math.abs((cfg.rate||1)-r)<.01}">${l}</button>`).join("")}</div></div>
       <div class="dash-act"><button class="ghost" id="s-test">▶ ${TX("ทดลองฟัง","Try it")}</button><button class="primary" id="s-vsave" disabled>${TX("บันทึกการตั้งค่าเสียง","Save voice settings")}</button></div>
       <p class="hint" id="s-vmsg" style="margin:0">${TX("เลือกแล้วกดทดลองฟังได้ กด บันทึก เพื่อใช้กับทุกภาษาและทุกเครื่องที่ล็อกอิน","Pick and try, then press Save to use it in every language and on every device you sign in to")}</p>
-      <p class="hint" style="margin:0">${TX("เสียงฟรีทั้งหมด ใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ Enhanced หรือ Premium (ฟรี) · Mac ไปที่ การตั้งค่าระบบ › การช่วยการเข้าถึง › เนื้อหาที่พูด · Windows/Edge มีเสียง Natural ให้อัตโนมัติ","All voices are free and come from your device. For more natural voices: on iPad/iPhone go to Settings › Accessibility › Spoken Content › Voices and download an Enhanced or Premium voice (free) · on Mac: System Settings › Accessibility › Spoken Content · Windows/Edge has Natural voices built in.")}</p>
     </div>`);
   $("#s-x").onclick=closeSheet;
   offPanel();
   $("#s-prof").onclick=()=>{closeSheet();openProfile()};
   $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
   $("#s-dash").onclick=()=>{closeSheet();openDash()};
-  const draft=()=>VDRAFT||(VDRAFT={mode:vsaved().mode,rate:vsaved().rate,names:{[lang]:vsaved().name}});
+  const draft=()=>VDRAFT||(VDRAFT={mode:vsaved().mode,pv:vsaved().pv,rate:vsaved().rate,names:{[lang]:vsaved().name}});
+  const pvTry=pv=>{const id=packId(lang,pv),c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];
+    if(packHas(c.t,id)){lastSay={};packSpeak(c.t,false,id)}else{packIdx(id);toast(TX("เสียงนี้กำลังเตรียม ลองใหม่อีกสักครู่","This voice is still being prepared, try again soon"))}};
+  document.querySelectorAll("[data-pv]").forEach(b=>b.onclick=e=>{const d=draft();d.mode="pack";d.pv=b.dataset.pv;
+    document.querySelectorAll("[data-pv]").forEach(x=>x.setAttribute("aria-checked",x===b));document.querySelectorAll("[data-vm]").forEach(x=>x.setAttribute("aria-pressed","false"));voiceDirty();pvTry(b.dataset.pv)});
   document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{const d=draft();d.mode=b.dataset.vm;d.names={};const sc=$("#sheet .sheet").scrollTop;const keep=VDRAFT;openSettings();VDRAFT=keep;voiceDirty();$("#sheet .sheet").scrollTop=sc});
   document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;draft().names[lang]=n;voiceDirty();document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
     const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)});
@@ -115,7 +142,7 @@ function openSettings(){
   document.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);applyContentLang();render();openSettings()});
   document.querySelectorAll("[data-trl]").forEach(b=>b.onclick=()=>{setTRL(b.dataset.trl);openSettings()});
   const sv=$("#s-vsave");if(sv)sv.onclick=()=>{if(!VDRAFT)return;const d=VDRAFT;VDRAFT=null;
-    saveV({mode:d.mode,rate:d.rate});for(const l in (d.names||{})){const pl=lang;lang=l;saveV({name:d.names[l]||""});lang=pl}
+    saveV({mode:d.mode,rate:d.rate,pv:d.pv||"f1"});for(const l in (d.names||{})){const pl=lang;lang=l;saveV({name:d.names[l]||""});lang=pl}
     voiceToStore();sv.disabled=true;sv.textContent=TX("บันทึกแล้ว ✓","Saved ✓");toast(TX("บันทึกการตั้งค่าเสียงแล้ว ใช้กับทุกภาษา","Voice settings saved for every language"))};
   if(VDRAFT)voiceDirty();
   $("#s-test").onclick=()=>{const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)};
@@ -772,7 +799,7 @@ function thRespell(t){let s=String(t);for(const k in TH_READ)s=s.split(k).join(T
 let SPK_END=0;
 player.addEventListener("play",()=>{SPK_END=Date.now()+15000});
 ["ended","pause","error"].forEach(ev=>player.addEventListener(ev,()=>{SPK_END=Date.now()}));
-function speakingNow(){return(!player.paused&&!player.ended)||(webTTS&&(speechSynthesis.speaking||speechSynthesis.pending))}
+function speakingNow(){return packBusy||(!player.paused&&!player.ended)||(webTTS&&(speechSynthesis.speaking||speechSynthesis.pending))}
 function whenQuiet(fn,max){const t0=Date.now(),lim=max||7000;let seen=false;
   const chk=()=>{const busy=speakingNow();if(busy)seen=true;
     if((!busy&&(seen||Date.now()-t0>350))||Date.now()-t0>lim){setTimeout(fn,seen?250:0);return}setTimeout(chk,80)};chk()}
@@ -794,12 +821,23 @@ addEventListener("offline",()=>toast(TX("ออฟไลน์อยู่ ย�
 addEventListener("online",()=>{toast(TX("กลับมาออนไลน์แล้ว กำลังซิงก์","Back online, syncing"));if(dbDoc){pending=true;push()}});
 const OFFC="koel-offline";
 function offFiles(l){const f=(ACHUNKS[l]||[]).map(i=>"a"+i+".js");if(l==="zh"){for(const i of new Set(Object.values(SIDX)))f.push("k"+i+".js");f.push("hw.js")}return f}
-async function offState(l){if(!("caches" in window))return{have:0,n:0};const c=await caches.open(OFFC),f=offFiles(l);let have=0;for(const x of f)if(await c.match(x))have++;return{have,n:f.length}}
-async function offDownload(l,onp){const c=await caches.open(OFFC),f=offFiles(l);let k=0;
-  for(const x of f){if(!(await c.match(x))){const r=await fetch(x,{cache:"no-cache"});if(!r.ok)throw new Error(x);await c.put(x,r)}k++;onp(k,f.length)}}
+/* files for offline: the chosen in-app voice (if any) replaces the older bundled clips */
+async function offList(l){const cfg=vset();if(cfg.mode==="pack"){const id=packId(l,cfg.pv);
+    try{const a=await (await fetch("v/"+id+".json")).json();const f=["v/"+id+".json"].concat(a.map(h=>"v/"+id+"/"+h+".mp3"));
+      if(l==="zh"){for(const i of new Set(Object.values(SIDX)))f.push("k"+i+".js");f.push("hw.js")}return f}catch(e){}}
+  return offFiles(l)}
+async function offState(l){if(!("caches" in window))return{have:0,n:0};const c=await caches.open(OFFC),f=await offList(l);
+  const keys=new Set((await c.keys()).map(r=>r.url));
+  let have=0;for(const x of f)if(keys.has(new URL(x,location.href).href))have++;return{have,n:f.length,small:f[0]&&f[0].startsWith("v/")}}
+async function offDownload(l,onp){const c=await caches.open(OFFC),f=await offList(l);let k=0,i=0;
+  const keys=new Set((await c.keys()).map(r=>new URL(r.url).href));
+  const work=async()=>{while(i<f.length){const x=f[i++];const u=new URL(x,location.href).href;
+    if(!keys.has(u)){let ok=false;for(let t=0;t<3&&!ok;t++){try{const r=await fetch(x,{cache:"no-cache"});if(r.ok){await c.put(x,r);ok=true}}catch(e){}}if(!ok&&!x.endsWith(".mp3"))throw new Error(x)}
+    k++;if(k%20===0||k===f.length)onp(k,f.length)}};
+  await Promise.all([work(),work(),work(),work(),work(),work()])}
 async function offPanel(){const box=$("#s-off");if(!box)return;
   if(!("caches" in window)||!("serviceWorker" in navigator)){box.innerHTML=`<p class="hint" style="margin:0">${TX("เบราว์เซอร์นี้ยังไม่รองรับการใช้งานออฟไลน์","This browser can't work offline")}</p>`;return}
-  const st=await offState(lang),mb=Math.round(st.n*0.42),done=st.n&&st.have===st.n;
+  const st=await offState(lang),mb=Math.max(1,Math.round(st.n*(st.small?0.006:0.42))),done=st.n&&st.have===st.n;
   box.innerHTML=`<p class="hint" style="margin:0">${TX("หลังเปิดแอปครั้งแรก แอปเปิดได้แม้ไม่มีเน็ต บทเรียน เกม และการฝึกเขียนใช้ได้ครบ ความคืบหน้าจะซิงก์เข้าบัญชีเมื่อกลับมาออนไลน์","After the first visit the app opens without internet: lessons, games and writing all work, and progress syncs when you're back online.")}</p>
    ${st.n?`<div class="bar"><i id="off-bar" style="width:${Math.round(st.have/st.n*100)}%"></i></div>
    <button class="${done?"ghost":"primary"}" id="off-dl" ${done?"disabled":""}>${done?TX("✓ เสียงภาษา"+DATA[lang].name+" พร้อมใช้ออฟไลน์แล้ว","✓ "+DATA[lang].name+" audio is ready offline"):TX(`ดาวน์โหลดเสียงภาษา${DATA[lang].name}ไว้ใช้ออฟไลน์ (ประมาณ ${mb} MB)`,`Download audio for offline use (about ${mb} MB)`)}</button>`
@@ -863,7 +901,10 @@ function openDash(){
   el.querySelectorAll("[data-say]").forEach(b=>b.onclick=e=>{e.stopPropagation();speak(b.dataset.say)});
 }
 /* entry points: a card on the Today tab and in Settings */
-const _renderD=render;render=function(){_renderD();if(tab==="today"&&DATA&&$("#view")&&!$("#d-open")){
+const _renderD=render;render=function(){
+  /* never show the "start" goal picker as if progress were lost: give each language a default 6-month goal (changeable) */
+  if(DATA&&tab==="today"&&!S().goal&&!editGoal){S().goal={m:6,start:Date.now()};save()}
+  _renderD();if(DATA&&vset().mode==="pack")packIdx(packId());if(tab==="today"&&DATA&&$("#view")&&!$("#d-open")){
   const ds=dashStats(lang);const b=document.createElement("button");b.className="gcard";b.id="d-open";
   b.innerHTML=`<span class="gi">📊</span><span><b>${TX("แดชบอร์ดการเรียน","Learning dashboard")}</b><small>${TX(`เรียนแล้ว ${ds.seen}/${ds.n} · ต้องทบทวน ${ds.due.length} · พลาดบ่อย ${ds.weak.length} ›`,`Learned ${ds.seen}/${ds.n} · ${ds.due.length} due · ${ds.weak.length} often missed ›`)}</small></span>`;
   b.onclick=openDash;$("#view").prepend(b)}};
