@@ -2,7 +2,8 @@
    Koel v2 extension: auth (Supabase), admin, voice, writing practice,
    new games. Loaded after the core script; overrides a few globals.
    ================================================================ */
-const TX=(th,en)=>lang==="th"?en:th;           // Thai UI for most languages, English UI in the Thai course
+let UIL=(()=>{try{return localStorage.getItem("koel-ui")||""}catch(e){return""}})();      // app language chosen by the user
+const TX=(th,en)=>UIL?(UIL==="th"?th:en):(lang==="th"?en:th);  // new screens: Thai, or English for any other app language
 let PIC=null,STK=null;
 if(navigator.standalone)document.body.classList.add("ios-app");
 addEventListener("scroll",()=>{const h=$("#hdr");if(h)h.classList.toggle("scrolled",scrollY>4)},{passive:true});
@@ -14,7 +15,7 @@ let UNLOCK_PW=null;
 
 /* ---------- shell additions ---------- */
 const _render=render;
-render=function(){document.body.dataset.tab=tab;_render();const rb=$("#railbrand");if(rb&&!rb.firstChild)rb.innerHTML=mascot("idle",34)+"<span>Koel</span>";};
+render=function(){document.body.dataset.tab=tab;_render();applyUI();const rb=$("#railbrand");if(rb&&!rb.firstChild)rb.innerHTML=mascot("idle",34)+"<span>Koel</span>";};
 $("#gear").onclick=()=>openSettings();
 
 /* =================== VOICE (item 3) =================== */
@@ -22,8 +23,8 @@ const VKEY="koel-voice";
 let VS={};try{VS=JSON.parse(localStorage.getItem(VKEY)||"{}")}catch(e){}
 const vset=()=>Object.assign({mode:"app",name:"",rate:1},VS[lang]||{});
 function saveV(o){VS[lang]=Object.assign(vset(),o);try{localStorage.setItem(VKEY,JSON.stringify(VS))}catch(e){}}
-const FEMALE=/female|woman|หญิง|kanya|narisa|premwadee|achara|pattara|tingting|ting-ting|meijia|mei-jia|sinji|lili|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomo|huihui|yaoyao|anna|petra|helena|katja|hedda|amala|marlene|vicki|samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|aria|jenny|serena|fiona|kate|nicky|emma|michelle|sonia|libby|natasha|amelie|amélie|audrey|marie|aurelie|aurélie|julie|hortense|denise|virginie|celine|céline|eloise|vivienne|brigitte|seraphina|elke|gisela|louisa|maja|sara|siri female/i;
-const MALE=/\bmale\b|\bman\b|ชาย|niwat|li-mu|limu|yunxi|yunyang|yunjian|yunhao|kangkang|markus|yannick|stefan|conrad|killian|kasper|florian|ralf|alex\b|daniel|fred\b|tom\b|aaron|arthur|rishi|oliver|gordon|david|mark\b|guy\b|ryan|christopher|eric\b|brian|andrew|thomas|nicolas|henri|paul\b|claude|remy|rémy|jacques|alain|maurice|jerome|yves|siri male/i;
+const FEMALE=/female|woman|หญิง|kanya|narisa|premwadee|achara|pattara|tingting|ting-ting|meijia|mei-jia|sinji|lili|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomo|huihui|yaoyao|anna|petra|helena|katja|hedda|amala|marlene|vicki|samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|aria|jenny|serena|fiona|kate|nicky|emma|michelle|sonia|libby|natasha|amelie|amélie|audrey|marie|aurelie|aurélie|julie|hortense|denise|virginie|celine|céline|eloise|vivienne|brigitte|seraphina|elke|gisela|louisa|maja|sara|siri female|flo\b|grandma|sandy|shelley|kathy|princess|zarvox|mei-jia|sin-ji|yuna|alice|joana|monica|paulina|zuzana/i;
+const MALE=/\bmale\b|\bman\b|ชาย|niwat|li-mu|limu|yunxi|yunyang|yunjian|yunhao|kangkang|markus|yannick|stefan|conrad|killian|kasper|florian|ralf|alex\b|daniel|fred\b|tom\b|aaron|arthur|rishi|oliver|gordon|david|mark\b|guy\b|ryan|christopher|eric\b|brian|andrew|thomas|nicolas|henri|paul\b|claude|remy|rémy|jacques|alain|maurice|jerome|yves|siri male|eddy|reed|rocko|grandpa|ralph|albert|junior|bruce|jacques|bahh|boing|xander|luca|jorge|diego/i;
 const vGender=v=>FEMALE.test(v.name||"")?"f":MALE.test(v.name||"")&&!/female/i.test(v.name)?"m":"";
 const vQuality=v=>/premium|enhanced|natural|neural|online|siri|google/i.test(v.name||"")?2:v.localService===false?1:0;
 function langVoices(){const code=(DATA[lang]||{}).voice||"en-US",two=code.slice(0,2);lv();
@@ -34,16 +35,31 @@ function pickVoice(g){const vs=langVoices(),cfg=vset();
   const hit=vs.find(v=>vGender(v)===g);if(hit)return{v:hit,shift:false};
   return{v:vs.find(v=>vGender(v)!==(g==="m"?"f":"m"))||vs[0],shift:true};}
 const _speak=speak;
-speak=function(t,slow){if(!t)return;const m=vset().mode;
+let lastSay={t:"",at:0};
+speak=function(t,slow){if(!t)return;const now=Date.now();if(t===lastSay.t&&!!slow===lastSay.s&&now-lastSay.at<1200)return;lastSay={t,s:!!slow,at:now};const m=vset().mode;
   if(m==="f"||m==="m"||(lang==="fr"&&m==="app"&&!AIDX[hk(lang+"|"+t)]))return genderSpeak(t,slow,m==="app"?"":m);
   return _speak(t,slow)};
-function genderSpeak(t,slow,g){
+const VNAME={zh:["จีน","Chinese"],de:["เยอรมัน","German"],en:["อังกฤษ","English"],fr:["ฝรั่งเศส","French"],th:["ไทย","Thai"]};
+let noVoiceWarned={};
+function voiceMissing(){if(!webTTS)return true;lv();if(!voices.length)return false;const two=((DATA[lang]||{}).voice||"").slice(0,2).toLowerCase();return !voices.some(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(two))}
+function warnNoVoice(){if(noVoiceWarned[lang])return;noVoiceWarned[lang]=1;const n=VNAME[lang]||["",""];
+  toast(TX(`เครื่องนี้ยังไม่มีเสียงภาษา${n[0]} เพิ่มได้ฟรี: Mac ไปที่ การตั้งค่าระบบ › การช่วยการเข้าถึง › เนื้อหาที่พูด · iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง`,`This device has no ${n[1]} voice yet. Add one for free in your device's Spoken Content / Text-to-speech settings.`))}
+function genderSpeak(t,slow,g){if(voiceMissing())warnNoVoice();
   if(!webTTS){toast("เครื่องนี้ไม่มีเสียงอ่าน");return}
-  try{player.pause();speechSynthesis.cancel()}catch(e){}
+  try{player.pause()}catch(e){}
   const u=new SpeechSynthesisUtterance(String(t).replace(/……|…|\.\.\./g," "));u.lang=DATA[lang].voice;
   const{v,shift}=pickVoice(g);if(v)u.voice=v;const rate=vset().rate||1;u.rate=(slow?.6:.95)*rate;
   if(shift){u.pitch=g==="m"?.7:1.25}
-  try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){}}
+  ttsSpeak(u)}
+
+
+/* =================== RELIABLE SPEECH =================== */
+let ttsKeep=null,ttsUnlocked=false;
+function ttsSpeak(u){if(!webTTS)return;ttsKeep=u;   /* keep a reference: Chrome drops utterances that get garbage-collected */
+  const go=()=>{try{if(speechSynthesis.paused)speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){}};
+  if(speechSynthesis.speaking||speechSynthesis.pending){try{speechSynthesis.cancel()}catch(e){}setTimeout(go,30)}else go()}
+function ttsUnlock(){if(ttsUnlocked||!webTTS)return;ttsUnlocked=true;try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+document.addEventListener("pointerdown",ttsUnlock,{capture:true,once:true});
 
 /* =================== SETTINGS SHEET =================== */
 function sheet(html){closeSheet();const bg=document.createElement("div");bg.className="sheet-bg";bg.id="sheet";bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
@@ -53,28 +69,33 @@ function openSettings(){
   if(!DATA)return;const cfg=vset(),vs=langVoices(),gm=cfg.mode;
   const list=(gm==="f"||gm==="m")?vs.filter(v=>vGender(v)===gm||!vGender(v)):vs;
   const hasG=g=>vs.some(v=>vGender(v)===g);
-  const acct=AUTH.user?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h3>บัญชี</h3><p class="hint" style="margin:0">${esc(AUTH.user.email||"")} · ${AUTH.role==="admin"?"แอดมิน":"ผู้ใช้งาน"}</p>
-      <p class="hint" style="margin:0">ความคืบหน้าบันทึกในบัญชี เปิดเครื่องไหนก็เรียนต่อได้ · ใช้ฟรีทั้งหมด</p>
-      <div class="row-flex" style="flex-wrap:wrap">${AUTH.role==="admin"?`<button class="primary" id="s-admin" style="width:auto">หน้าแอดมิน</button>`:""}<button class="ghost" id="s-out">ออกจากระบบ</button></div></div>`
-    :AUTH.ready?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h3>บัญชี</h3><p class="hint" style="margin:0">ยังไม่ได้ล็อกอิน ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น</p><button class="primary" id="s-in">ล็อกอิน / สมัครสมาชิก (ฟรี)</button></div>`:"";
-  sheet(`<div class="row-flex" style="justify-content:space-between"><h3>ตั้งค่า</h3><button class="x" id="s-x" aria-label="ปิด">×</button></div>
-    <button class="gcard" id="s-prof"><span class="gi">${mascot("happy",40)}</span><span><b>${esc(nick()||"ผู้เรียน Koel")}</b><small>ข้อมูลผู้เรียน ชื่อเล่น และไทม์ไลน์พัฒนาการ ›</small></span></button>
-    <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>ดูวิธีเริ่มใช้งานอีกครั้ง</b><small>แนะนำการใช้แอปสั้น ๆ</small></span></button>
+  const acct=AUTH.user?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h3>${TX("บัญชี","Account")}</h3><p class="hint" style="margin:0">${esc(AUTH.user.email||"")} · ${AUTH.role==="admin"?TX("แอดมิน","Admin"):TX("ผู้ใช้งาน","Learner")}</p>
+      <p class="hint" style="margin:0">${TX("ความคืบหน้าบันทึกในบัญชี เปิดเครื่องไหนก็เรียนต่อได้ · ใช้ฟรีทั้งหมด","Progress is saved to your account on every device · completely free")}</p>
+      <div class="row-flex" style="flex-wrap:wrap">${AUTH.role==="admin"?`<button class="primary" id="s-admin" style="width:auto">${TX("หน้าแอดมิน","Admin page")}</button>`:""}<button class="ghost" id="s-out">${TX("ออกจากระบบ","Sign out")}</button></div></div>`
+    :AUTH.ready?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h3>${TX("บัญชี","Account")}</h3><p class="hint" style="margin:0">${TX("ยังไม่ได้ล็อกอิน ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น","Not signed in: progress stays on this device")}</p><button class="primary" id="s-in">${TX("ล็อกอิน / สมัครสมาชิก (ฟรี)","Sign in / sign up (free)")}</button></div>`:"";
+  sheet(`<div class="row-flex" style="justify-content:space-between"><h3>${TX("ตั้งค่า","Settings")}</h3><button class="x" id="s-x" aria-label="ปิด">×</button></div>
+    <button class="gcard" id="s-prof"><span class="gi">${mascot("happy",40)}</span><span><b>${esc(nick()||TX("ผู้เรียน Koel","Koel learner"))}</b><small>${TX("ข้อมูลผู้เรียน ชื่อเล่น และไทม์ไลน์พัฒนาการ ›","Profile, nickname and progress timeline ›")}</small></span></button>
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ภาษาของแอป","App language")}</h3><div class="seg2" role="group">${UI_LANGS.map(([k,n])=>`<button type="button" data-ui="${k}" aria-pressed="${(UIL||"th")===k}">${n}</button>`).join("")}</div><p class="hint" style="margin:0">${TX("ใช้กับหน้าวิธีใช้งาน เมนู และหน้าใหม่ ๆ ส่วนคำแปลบทเรียนยังเป็นภาษาไทย","Used for the guide, menus and new screens. Lesson translations stay in Thai.")}</p></div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ใช้งานออฟไลน์","Offline")} ${navigator.onLine?"":`<span class="chip warn">${TX("ออฟไลน์อยู่","offline now")}</span>`}</h3><div id="s-off" style="display:flex;flex-direction:column;gap:10px"></div></div>
+    <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>${TX("ดูวิธีเริ่มใช้งานอีกครั้ง","Watch the quick guide again")}</b><small>${TX("แนะนำการใช้แอปสั้น ๆ","How to use Koel")}</small></span></button>
     ${acct}
-    <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>เสียงอ่านภาษา${esc(DATA[lang].name)}</h3>
-      <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?"อัตโนมัติ":"เสียงในแอป (เดิม)"],["f","👩 เสียงผู้หญิง"],["m","👨 เสียงผู้ชาย"]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
-      ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">เครื่องนี้ยังไม่มีเสียง${gm==="m"?"ผู้ชาย":"ผู้หญิง"}ของภาษานี้ แอปจะปรับโทนเสียงให้แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)</p>`}
-      <label class="field">เลือกเสียง<select id="s-voice"><option value="">ให้แอปเลือกเสียงที่ดีที่สุด</option>${list.map(v=>`<option value="${esc(v.name)}" ${cfg.name===v.name?"selected":""}>${esc(v.name)}${vGender(v)?" · "+(vGender(v)==="f"?"หญิง":"ชาย"):""}${vQuality(v)===2?" ★":""}</option>`).join("")}</select></label>`:""}
-      <label class="field">ความเร็ว <input id="s-rate" type="range" min="0.7" max="1.2" step="0.05" value="${cfg.rate||1}"></label>
-      <button class="ghost" id="s-test">▶ ทดลองฟัง</button>
-      <p class="hint" style="margin:0">เสียงฟรีทั้งหมด เสียงผู้หญิง/ชายใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ "Enhanced/Premium" ของภาษานั้น (ฟรี) · Windows/Edge มีเสียง Natural ให้อัตโนมัติ</p>
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่านภาษา"+DATA[lang].name,"Voice for "+({zh:"Chinese",de:"German",en:"English",fr:"French",th:"Thai"})[lang])}</h3>
+      <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?TX("อัตโนมัติ","Automatic"):TX("เสียงในแอป (เดิม)","Built-in voice")],["f",TX("เสียงผู้หญิง","Female voice")],["m",TX("เสียงผู้ชาย","Male voice")]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
+      ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะปรับโทนเสียงให้แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app shifts the pitch instead. You can add voices for free in your device settings (see below).")}</p>`}
+      <div class="field"><span>${TX("เลือกเสียง","Voice")}</span><div class="vlist" role="radiogroup">${[{name:"",label:TX("ให้แอปเลือกเสียงที่ดีที่สุด","Let the app pick the best voice")}].concat(list.map(v=>({name:v.name,label:v.name.replace(/\s*\(.*\)\s*$/,""),g:vGender(v),q:vQuality(v)===2}))).map(v=>`<button type="button" class="vopt" role="radio" data-vn="${esc(v.name)}" aria-checked="${(cfg.name||"")===v.name}"><span class="vdot"></span><span style="flex:1;min-width:0">${esc(v.label)}${v.q?` <small class="vq">${TX("คุณภาพสูง","high quality")}</small>`:""}</span>${v.g?`<small class="vg">${v.g==="f"?TX("หญิง","female"):TX("ชาย","male")}</small>`:""}${v.name?`<span class="vplay" data-vtest="${esc(v.name)}" aria-label="ฟัง">${ICON_PLAY}</span>`:""}</button>`).join("")}</div></div>`:""}
+      <div class="field"><span>${TX("ความเร็วในการพูด","Speaking speed")}</span><div class="seg2" role="group">${[[0.8,TX("ช้า","Slow")],[0.9,TX("ค่อนข้างช้า","A bit slow")],[1,TX("ปกติ","Normal")],[1.1,TX("เร็ว","Fast")]].map(([r,l])=>`<button type="button" data-rate="${r}" aria-pressed="${Math.abs((cfg.rate||1)-r)<.01}">${l}</button>`).join("")}</div></div>
+      <button class="ghost" id="s-test">▶ ${TX("ทดลองฟัง","Try it")}</button>
+      <p class="hint" style="margin:0">${TX("เสียงฟรีทั้งหมด ใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ Enhanced หรือ Premium (ฟรี) · Mac ไปที่ การตั้งค่าระบบ › การช่วยการเข้าถึง › เนื้อหาที่พูด · Windows/Edge มีเสียง Natural ให้อัตโนมัติ","All voices are free and come from your device. For more natural voices: on iPad/iPhone go to Settings › Accessibility › Spoken Content › Voices and download an Enhanced or Premium voice (free) · on Mac: System Settings › Accessibility › Spoken Content · Windows/Edge has Natural voices built in.")}</p>
     </div>`);
   $("#s-x").onclick=closeSheet;
+  offPanel();
   $("#s-prof").onclick=()=>{closeSheet();openProfile()};
   $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
   document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{saveV({mode:b.dataset.vm,name:""});openSettings()});
-  const sv=$("#s-voice");if(sv)sv.onchange=()=>saveV({name:sv.value});
-  $("#s-rate").oninput=e=>saveV({rate:+e.target.value});
+  document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;saveV({name:n});document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
+    const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)});
+  document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{saveV({rate:+b.dataset.rate});document.querySelectorAll("[data-rate]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+  document.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);openSettings()});
   $("#s-test").onclick=()=>{const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)};
   const so=$("#s-out");if(so)so.onclick=async()=>{await AUTH.sb.auth.signOut();try{localStorage.removeItem(PWK)}catch(e){};location.reload()};
   const si=$("#s-in");if(si)si.onclick=()=>{closeSheet();showAuth()};
@@ -242,6 +263,23 @@ function endScreen(title,score,lines,again,list){
   addXP(Math.round(score/5));bump();const s=S();s.tests=(s.tests||[]).concat([{d:Date.now(),title,pct:Math.min(100,score),score,n:0}]).slice(-40);save();
   $("#eagain").onclick=again;$("#eclose").onclick=closeStudy;if(score>=70)confetti()}
 
+
+/* =================== GAME FEEDBACK: sounds + right/wrong marks =================== */
+let AC=null;
+function sfx(kind){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();
+  const t=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
+  const tone=(f,a,d,type,vol)=>{const o=AC.createOscillator(),v=AC.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f,t+a);v.gain.setValueAtTime(0,t+a);v.gain.linearRampToValueAtTime(vol||.18,t+a+.01);v.gain.exponentialRampToValueAtTime(.0001,t+a+d);o.connect(v);v.connect(g);o.start(t+a);o.stop(t+a+d+.02)};
+  if(kind==="ok"){tone(659,0,.18,"triangle");tone(988,.09,.28,"triangle")}
+  else if(kind==="bad"){tone(196,0,.22,"square",.07);tone(147,.1,.26,"square",.06)}
+  else if(kind==="win"){[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.3,"triangle",.16))}
+  else tone(880,0,.05,"sine",.08)}catch(e){}}
+function gfb(ok,msg,at){const st=$("#stage")||$("#study");if(!st)return;let b=$("#gfb");if(!b){b=document.createElement("div");b.id="gfb";b.setAttribute("role","status");b.setAttribute("aria-live","polite");$("#study").appendChild(b)}
+  b.className="gfb "+(ok?"ok":"bad");b.innerHTML=`${mascot(ok?"happy":"oops",44)}<b>${ok?"✓":"✗"}</b><span>${msg}</span>`;b.hidden=false;clearTimeout(b._t);b._t=setTimeout(()=>{b.hidden=true},1700);
+  if(at){const r=at.getBoundingClientRect(),m=document.createElement("span");m.className="gmark "+(ok?"ok":"bad");m.textContent=ok?"✓":"✗";m.style.left=(r.left+r.width/2)+"px";m.style.top=(r.top+r.height/2)+"px";document.body.appendChild(m);setTimeout(()=>m.remove(),900)}}
+/* the classic games get the same sounds */
+const _resolveQ=resolveQ;resolveQ=function(ok,timeout){if(T&&T.qs[T.i]&&!T.qs[T.i].done)sfx(ok?"ok":"bad");return _resolveQ(ok,timeout)};
+document.addEventListener("click",e=>{const b=e.target.closest("#study button,#onb button");if(b&&!b.closest("[data-fi],[data-fo],[data-i],[data-j],#ws,[data-ci]"))sfx("tap")},true);
+
 /* ---- 8. Flashcards by situation ---- */
 function flashPicker(){const T=topics(),order=Object.keys(T).filter(g=>g!=="mine");
   gameShell(TX("แฟลชการ์ดตามสถานการณ์","Flashcards by topic"),`<p class="hint">${TX("เลือกชุดการ์ด ดูด้านหน้าแล้วเลือกความหมาย ตอบผิดการ์ดจะพลิกเฉลยพร้อมคำแปล คำอธิบาย และตัวอย่างการใช้","Pick a set. Read the front and choose the meaning; a wrong answer flips the card to show the translation, note and example.")}</p>
@@ -251,7 +289,7 @@ let FC=null;
 function startFlash(g){const cs=shuffle(topicCards(g).filter(c=>c.m)).slice(0,12);if(cs.length<4){toast(TX("ชุดนี้มีการ์ดน้อยเกินไป","Not enough cards"));return}
   FC={g,cs,i:0,score:0,right:0,miss:[]};drawFlash()}
 function drawFlash(state){const c=FC.cs[FC.i];if(!c)return endFlash();
-  if(!state){const pool=shuffle(deck().filter(x=>x.id!==c.id&&x.m&&x.m!==c.m&&x.g===c.g)).slice(0,3);const more=pool.length<3?shuffle(deck().filter(x=>x.m&&x.m!==c.m&&!pool.includes(x))).slice(0,3-pool.length):[];FC.opts=shuffle([c,...pool,...more]);FC.pick=null}
+  if(!state){const pool=shuffle(deck().filter(x=>x.id!==c.id&&x.m&&x.m!==c.m&&x.g===c.g)).slice(0,3);const more=pool.length<3?shuffle(deck().filter(x=>x.m&&x.m!==c.m&&!pool.includes(x))).slice(0,3-pool.length):[];const seen=new Set([c.m]);FC.opts=shuffle([c,...pool,...more].filter(o=>o===c||(!seen.has(o.m)&&seen.add(o.m))));FC.pick=null}
   const done=FC.pick!=null||state==="rev",flip=done;
   gameShell(TX("แฟลชการ์ด: ","Flashcards: ")+topicName(FC.g),`
    <div class="bar"><i style="width:${FC.i/FC.cs.length*100}%"></i></div>
@@ -268,7 +306,7 @@ function drawFlash(state){const c=FC.cs[FC.i];if(!c)return endFlash();
   $("#fc").onclick=e=>{if(e.target.closest("[data-say]"))return;$("#fc").classList.toggle("flip")};
   const ff=$("#fflip");if(ff)ff.onclick=()=>$("#fc").classList.toggle("flip");
   const fr=$("#frev");if(fr)fr.onclick=()=>{FC.miss.push(c);drawFlash("rev")};
-  document.querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>{FC.pick=+b.dataset.fo;const ok=FC.opts[FC.pick].id===c.id;if(ok){FC.score+=10;FC.right++}else FC.miss.push(c);speak(c.t);drawFlash("ans")});
+  document.querySelectorAll("[data-fo]").forEach(b=>b.onclick=()=>{FC.pick=+b.dataset.fo;const ok=FC.opts[FC.pick].id===c.id;if(ok){FC.score+=10;FC.right++;sfx("ok")}else{FC.miss.push(c);sfx("bad")}drawFlash("ans")});
   const fn=$("#fnext");if(fn)fn.onclick=()=>{FC.i++;drawFlash()};
   if(!state)speak(c.t)}
 function endFlash(){const pct=Math.round(FC.right/FC.cs.length*100),miss=FC.miss;
@@ -314,9 +352,9 @@ function drawWS(){const W=WS;const hard=DIFF==="h";
   $("#wsrev").onclick=()=>{W.revealed=true;W.words.forEach(w=>w.rev=!w.found);paintWS();setTimeout(endWS,1600)};
   function check(l){const key=l.map(([x,y])=>x+","+y).join("|");
     const hit=W.words.find(w=>!w.found&&(w.cells.map(c=>c.join(",")).join("|")===key||[...w.cells].reverse().map(c=>c.join(",")).join("|")===key));
-    if(hit){hit.found=true;W.score+=10+Math.max(0,20-Math.floor((Date.now()-W.t0)/15000));speak(PW(hit.it));toast(hit.it.e+" "+PW(hit.it)+(PR(hit.it)?" ("+PR(hit.it)+")":"")+" = "+PM(hit.it));
-      if(W.words.every(w=>w.found)){drawWS();setTimeout(endWS,900)}else drawWS()}
-    else{const nb=box.querySelectorAll("button");l.forEach(([x,y])=>{const b=box.querySelector(`[data-x="${x}"][data-y="${y}"]`);b.classList.add("miss");setTimeout(()=>b.classList.remove("miss"),300)})}}}
+    if(hit){hit.found=true;sfx("ok");W.score+=10+Math.max(0,20-Math.floor((Date.now()-W.t0)/15000));speak(PW(hit.it));gfb(true,hit.it.e+" "+esc(PW(hit.it))+(PR(hit.it)?" ("+esc(PR(hit.it))+")":"")+" = "+esc(PM(hit.it)));
+      if(W.words.every(w=>w.found)){sfx("win");drawWS();setTimeout(endWS,900)}else drawWS()}
+    else{sfx("bad");gfb(false,TX("ยังไม่ใช่คำในรายการ ลองหาใหม่","That's not one of the words. Try again"));l.forEach(([x,y])=>{const b=box.querySelector(`[data-x="${x}"][data-y="${y}"]`);b.classList.add("miss");setTimeout(()=>b.classList.remove("miss"),600)})}}}
 function paintWS(){const box=$("#ws");if(!box)return;for(const w of WS.words)if(w.found||w.rev)for(const[x,y]of w.cells)box.querySelector(`[data-x="${x}"][data-y="${y}"]`).classList.add(w.found?"found":"rev")}
 function endWS(){clearInterval(GT);const W=WS,f=W.words.filter(w=>w.found).length,secs=Math.floor((Date.now()-W.t0)/1000);
   const score=Math.min(100,Math.round(f/W.words.length*80)+(f===W.words.length?Math.max(0,20-Math.floor(secs/20)):0));
@@ -338,13 +376,12 @@ function drawJig(){const J=JG,done=J.done.map(i=>J.items[i]);
    <div class="jg">${rows}${Array.from({length:Math.max(Lr.length,Rr.length)},(_,i)=>(Lr[i]?piece("pic",Lr[i],Lr[i].e,J.sel==="pic:"+J.items.indexOf(Lr[i])?"sel":""):"<div></div>")+(Rr[i]?`<div style="margin-left:-12%">${piece("word",Rr[i],esc(stripArt(PW(Rr[i]))),J.sel==="word:"+J.items.indexOf(Rr[i])?"sel":"")}</div>`:"<div></div>")).join("")}</div>`,
    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><p class="hint" style="margin:0;align-self:center">${TX("ต่อแล้ว","Joined")} <b>${J.done.length}/${J.items.length}</b></p><button class="ghost" id="jrev">${TX("กดเฉลย","Show answers")}</button></div>`);
   document.querySelectorAll(".jp:not(.done)").forEach(b=>b.onclick=()=>{const[k,i]=b.dataset.j.split(":");
-    if(k==="word")speak(PW(J.items[+i]));
     if(!J.sel||J.sel.split(":")[0]===k){J.sel=b.dataset.j;drawJig();return}
     const[k0,i0]=J.sel.split(":");J.sel=null;
-    if(i0===i){J.done.push(+i);speak(PW(J.items[+i]));if(J.done.length===J.items.length){drawJig();setTimeout(endJig,800)}else drawJig()}
-    else{J.err++;b.classList.add("bad");setTimeout(()=>drawJig(),380)}});
+    if(i0===i){J.done.push(+i);sfx("ok");gfb(true,J.items[+i].e+" = "+esc(PW(J.items[+i]))+" · "+esc(PM(J.items[+i])));speak(PW(J.items[+i]));if(J.done.length===J.items.length){drawJig();setTimeout(endJig,800)}else drawJig()}
+    else{J.err++;sfx("bad");const a=J.items[+i0],c2=J.items[+i];gfb(false,TX("ยังไม่ใช่ ","Not a match: ")+(k==="word"?a.e+" ≠ "+esc(stripArt(PW(c2))):esc(stripArt(PW(a)))+" ≠ "+c2.e));b.classList.add("bad");setTimeout(()=>drawJig(),650)}});
   $("#jrev").onclick=()=>{J.revealed=true;J.items.forEach((_,i)=>{if(!J.done.includes(i))J.done.push(i)});drawJig();setTimeout(endJig,1800)}}
-function endJig(){clearInterval(GT);const J=JG,secs=Math.floor((Date.now()-J.t0)/1000);
+function endJig(){clearInterval(GT);if(!JG.revealed)sfx("win");const J=JG,secs=Math.floor((Date.now()-J.t0)/1000);
   const score=J.revealed?20:Math.max(30,100-J.err*10-Math.max(0,secs-J.items.length*6));
   endScreen(TX("จิ๊กซอว์ภาพ-คำ","Picture jigsaw"),score,`<p class="hint">${TX(`ต่อผิด ${J.err} ครั้ง · ${secs} วินาที`,`${J.err} mistakes · ${secs}s`)}</p>`,()=>jigStart(J.sc),
    `<h2>${TX("คำในรอบนี้","Words")}</h2><div class="list">${J.items.map(it=>`<div class="item"><div class="t han">${it.e} ${esc(PW(it))}</div><div class="side"><button class="iconbtn" data-say="${esc(PW(it))}">${ICON_PLAY}</button></div><div class="s">${esc(PR(it))}</div><div class="m">${esc(PM(it))}</div></div>`).join("")}</div>`)}
@@ -361,8 +398,12 @@ function foStart(k){const sc=PIC.scenes[k],lvl=k+1;
   const own=shuffle(sc.items.slice()).slice(0,Math.min(16,7+lvl));
   const others=shuffle(PIC.scenes.filter(s=>s!==sc).flatMap(s=>s.items)).slice(0,Math.max(0,lvl*2-4));
   const all=shuffle(own.concat(others));
-  const size=Math.max(6.5,13-lvl*.55); // % of width
-  const ar=innerWidth>=640?.75:1.25,sy=size/ar;const pos=[];for(const it of all){let best=null;for(let t=0;t<250;t++){const p={x:2+Math.random()*(96-size),y:2+Math.random()*(96-sy)};const d=Math.min(...pos.map(q=>Math.max(Math.abs(q.x-p.x),Math.abs(q.y-p.y)*ar)),99);if(!best||d>best.d)best={...p,d};if(d>size*(lvl>8?.85:1.2))break}pos.push(best)}
+  const ar=innerWidth>=640?.75:1.25;                 /* container height / width */
+  let cols=Math.max(4,Math.ceil(Math.sqrt(all.length/ar)*1.05)),rows=Math.ceil(all.length/cols);
+  while(cols*rows<all.length)rows++;
+  const cw=100/cols,ch=100/rows,size=Math.min(12-lvl*.4,cw*.6,ch*ar*.6);
+  const cells=shuffle([...Array(cols*rows).keys()]).slice(0,all.length),pos=cells.map(c=>{const cx=c%cols,cy=Math.floor(c/cols),fw=size*1.55,fh=size*1.55/ar;
+    return{x:cx*cw+Math.random()*Math.max(0,cw-fw),y:cy*ch+Math.random()*Math.max(0,ch-fh)}});
   FO={k,lvl,sc,all,pos,size,targets:shuffle(own.slice()).slice(0,5),ti:0,hearts:3,miss:0,found:[],t0:Date.now(),mode:lvl<=4?"both":lvl<=8?"word":"audio",tries:0};
   drawFO();speakTarget();
   clearInterval(GT);GT=setInterval(()=>{const t=$("#gscore");if(t&&FO)t.textContent="♥".repeat(FO.hearts)+"♡".repeat(3-FO.hearts)},400)}
@@ -374,16 +415,16 @@ function drawFO(){const F=FO,t=F.targets[F.ti],sc=F.sc,rot=8+F.lvl*3;
    <div class="fo-ask">${TX("หา: ","Find: ")}${ask}</div>
    <div class="fo" id="fo" style="background:linear-gradient(160deg,${sc.bg[0]},${sc.bg[1]})">
      ${sc.deco.map((d,i)=>`<span class="deco" style="left:${[6,62,30,78][i%4]}%;top:${[8,14,64,70][i%4]}%;font-size:${70+i*14}px">${d}</span>`).join("")}
-     ${F.all.map((it,i)=>F.found.includes(it)?"":`<button class="it" data-fi="${i}" aria-label="${esc(PW(it))}" style="left:${F.pos[i].x}%;top:${F.pos[i].y}%;font-size:min(${F.size}vw,${F.size*7.2}px);transform:rotate(${Math.round((Math.random()*2-1)*rot)}deg)">${it.e}</button>`).join("")}
+     ${F.all.map((it,i)=>F.found.includes(it)?"":`<button class="it" data-fi="${i}" aria-label="${esc(PW(it))}" style="left:${F.pos[i].x}%;top:${F.pos[i].y}%;font-size:calc(${F.size/100} * min(100vw - 32px, 720px) * .86);transform:rotate(${Math.round((Math.random()*2-1)*Math.min(rot,24))}deg)">${it.e}</button>`).join("")}
    </div>`,
    `<div class="row-flex" style="justify-content:space-between"><span class="hint">${TX("ข้อ","Item")} ${F.ti+1}/${F.targets.length} · ${TX("พลาดได้ 3 ครั้ง","3 hearts")}</span><button class="ghost" id="fo-rev">${TX("กดเฉลย","Show me")}</button></div>`);
   $("#fo-say").onclick=speakTarget;
   $("#fo-rev").onclick=()=>{const i=F.all.indexOf(t);const b=document.querySelector(`[data-fi="${i}"]`);if(b){b.style.outline="4px solid var(--hard)";b.style.borderRadius="12px"}F.hearts=Math.max(0,F.hearts-1);setTimeout(()=>{if(FO!==F)return;F.found.push(t);nextFO()},1200)};
   document.querySelectorAll("[data-fi]").forEach(b=>b.onclick=()=>{const it=F.all[+b.dataset.fi];
-    if(it===t){b.classList.add("hit");speak(PW(it));F.found.push(it);setTimeout(()=>{if(FO===F)nextFO()},550)}
-    else{F.hearts--;F.miss++;F.tries++;b.classList.add("miss");speak(PW(it));toast(it.e+" = "+PW(it));setTimeout(()=>b.classList.remove("miss"),400);if(F.hearts<=0)setTimeout(()=>{if(FO===F)endFO()},500);else if(F.mode==="audio"&&F.tries===2)drawFO()}})}
+    if(it===t){b.classList.add("hit");sfx("ok");gfb(true,TX("ถูกต้อง! ","Correct! ")+it.e+" = "+esc(PW(it))+" · "+esc(PM(it)),b);speak(PW(it));F.found.push(it);setTimeout(()=>{if(FO===F)nextFO()},550)}
+    else{F.hearts--;F.miss++;F.tries++;sfx("bad");b.classList.add("miss");gfb(false,TX("ยังไม่ใช่ นั่นคือ ","Not that one: it's ")+it.e+" "+esc(PW(it))+" · "+TX("เหลือหัวใจ ","hearts left ")+Math.max(0,F.hearts),b);speak(PW(it));setTimeout(()=>b.classList.remove("miss"),600);const hs=$("#gscore");if(hs)hs.textContent="♥".repeat(Math.max(0,F.hearts))+"♡".repeat(3-Math.max(0,F.hearts));if(F.hearts<=0)setTimeout(()=>{if(FO===F)endFO()},500);else if(F.mode==="audio"&&F.tries===2)drawFO()}})}
 function nextFO(){FO.ti++;FO.tries=0;if(FO.ti>=FO.targets.length||FO.hearts<=0)return endFO();drawFO();speakTarget()}
-function endFO(){clearInterval(GT);const F=FO,ok=F.hearts>0,stars=ok?F.hearts:0;
+function endFO(){clearInterval(GT);const F=FO,ok=F.hearts>0,stars=ok?F.hearts:0;sfx(ok?"win":"bad");
   if(ok){const o=foSave();o[lang]=o[lang]||{};o[lang][F.k]=Math.max(o[lang][F.k]||0,stars);try{localStorage.setItem(FOK,JSON.stringify(o))}catch(e){}}
   const score=ok?50+stars*15+(F.lvl>8?5:0):Math.round(F.found.length*8);
   endScreen(TX("หาของในภาพ ด่าน ","Find it! Level ")+F.lvl,score,`<div class="stars">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div><p class="hint">${ok?TX("ผ่านด่าน! ด่านต่อไปเปิดแล้ว","Level cleared! Next level unlocked"):TX("หัวใจหมด ลองใหม่อีกครั้งนะ","Out of hearts. Try again!")}</p>`,()=>foStart(F.k),
@@ -418,8 +459,11 @@ const AUTH={sb:null,user:null,role:"user",ready:false};
 function loadSB(){if(window.supabase)return Promise.resolve();return new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
 async function initSB(){if(!KOEL_CFG.supabaseUrl||!KOEL_CFG.supabaseKey)return false;
   try{await loadSB();AUTH.sb=supabase.createClient(KOEL_CFG.supabaseUrl,KOEL_CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});AUTH.ready=true;return true}catch(e){return false}}
-async function loadProfile(){const{data:{user}}=await AUTH.sb.auth.getUser();AUTH.user=user||null;if(!user)return null;
-  try{const{data}=await AUTH.sb.from("profiles").select("role,status,display_name,onboarded").eq("id",user.id).maybeSingle();if(data){AUTH.role=data.role||"user";AUTH.status=data.status||"active";AUTH.onboarded=data.onboarded!==true?false:true;if(data.display_name)AUTH.nick=data.display_name}}catch(e){}
+async function loadProfile(){let user=null;try{const r=await AUTH.sb.auth.getUser();user=r.data&&r.data.user}catch(e){}
+  if(!user){try{const{data:{session}}=await AUTH.sb.auth.getSession();user=session&&session.user}catch(e){}}
+  AUTH.user=user||null;if(!user)return null;try{localStorage.setItem("koel-prof-"+user.id,JSON.stringify({role:AUTH.role,status:AUTH.status,nick:AUTH.nick,onb:AUTH.onboarded}))}catch(e){}
+  if(!navigator.onLine){try{const c=JSON.parse(localStorage.getItem("koel-prof-"+user.id)||"null");if(c){AUTH.role=c.role||"user";AUTH.status=c.status||"active";AUTH.nick=c.nick;AUTH.onboarded=c.onb!==false}}catch(e){}return user}
+  try{const{data}=await AUTH.sb.from("profiles").select("role,status,display_name,onboarded").eq("id",user.id).maybeSingle();if(data){AUTH.role=data.role||"user";AUTH.status=data.status||"active";AUTH.onboarded=data.onboarded!==true?false:true;if(data.display_name)AUTH.nick=data.display_name;try{localStorage.setItem("koel-prof-"+user.id,JSON.stringify({role:AUTH.role,status:AUTH.status,nick:AUTH.nick,onb:AUTH.onboarded}))}catch(e){}}}catch(e){}
   return user}
 async function contentKey(){try{const{data,error}=await AUTH.sb.from("app_secrets").select("value").eq("key","content_pw").maybeSingle();if(error)return null;return data&&data.value}catch(e){return null}}
 function authBox(mode,msg,ok){const g=$("#gate")||Object.assign(document.createElement("div"),{id:"gate"});if(!g.parentNode)document.body.appendChild(g);document.body.style.overflow="hidden";
@@ -544,7 +588,52 @@ async function openProfile(){
     openProfile()}}
 
 /* =================== ONBOARDING: new users, once, after login (animated "how to start" + language pick) =================== */
-const ONB_LANGS=[["zh","中文","ภาษาจีน"],["de","Deutsch","ภาษาเยอรมัน"],["en","English","ภาษาอังกฤษ"],["fr","Français","ภาษาฝรั่งเศส"],["th","ไทย","Thai, for foreigners"]];
+const UI_LANGS=[["th","ไทย"],["en","English"],["zh","中文"],["de","Deutsch"],["fr","Français"]];
+const TABS_I18N={th:["วันนี้","สถานการณ์","ตัวอักษร","เกม"],en:["Today","Topics","Alphabet","Games"],zh:["今天","情景","字母","游戏"],de:["Heute","Themen","Alphabet","Spiele"],fr:["Aujourd'hui","Thèmes","Alphabet","Jeux"]};
+function setUI(k){UIL=k;try{localStorage.setItem("koel-ui",k)}catch(e){}applyUI()}
+function applyUI(){const T=TABS_I18N[UIL||"th"]||TABS_I18N.th;["today","lib","alpha","game"].forEach((id,i)=>{const b=$("#tab-"+id);if(b&&b.lastChild)b.lastChild.textContent=T[i]});document.documentElement.lang=UIL||"th"}
+const ONB_I18N={
+ th:{pick:"เลือกภาษาที่ใช้ในแอป",pickp:"ใช้แสดงวิธีใช้งานและเมนู เปลี่ยนได้ทีหลังที่ ⚙️",skip:"ข้ามไปเลือกภาษาที่จะเรียน",next:"ถัดไป ›",back:"‹ ย้อนกลับ",
+   t0:"เริ่มต้นใช้งาน",h0:n=>`สวัสดี${n?" "+n:""} ฉันคือ Koel`,p0:"เพื่อนเรียนภาษาที่พูดได้จริง จีน เยอรมัน อังกฤษ ฝรั่งเศส และไทย ใช้ฟรีทั้งหมด มาดูวิธีใช้ 3 ขั้นสั้น ๆ",
+   t1:"ขั้นที่ 1",h1:"เลือกภาษาและเป้าหมาย",p1:"แตะภาษาด้านบนของแอป แล้วเลือกว่าอยากคุยได้ใน 3 หรือ 6 เดือน แอปจะจัดประโยคใหม่ให้พอดีทุกวัน",
+   t2:"ขั้นที่ 2",h2:"ฟัง เขียน แล้วเล่นเกม",p2:"กด \"เริ่มเลย\" ในหน้าวันนี้ ฟังเสียง (เลือกเสียงผู้หญิงหรือผู้ชายได้ที่ ⚙️) ฝึกเขียนตามเส้นประ แล้วทบทวนด้วยเกม",
+   t3:"ขั้นที่ 3",h3:"เรียนวันละนิด ทุกวัน",p3:"ความคืบหน้าบันทึกในบัญชีอัตโนมัติ เปิดมือถือ iPad หรือคอมก็เรียนต่อได้ ระบบจะเรียกประโยคที่ใกล้ลืมกลับมาให้ทวนเอง",
+   t4:"พร้อมแล้ว",h4:"อยากเริ่มเรียนภาษาอะไรก่อน",p4:"เลือก 1 ภาษา เปลี่ยนหรือเรียนเพิ่มได้ทุกเมื่อจากแถบภาษาด้านบน",
+   m:{learn:"อยากเรียนภาษาอะไร",within:"อยากคุยได้ภายใน",months:"เดือน",newp:"ประโยคใหม่ 1/5",mean:"ยินดีที่ได้รู้จัก",listen:"ฟัง",write:"เขียน",game:"เกม",today:"วันนี้",streak:"วันติดต่อกัน",due:"ทบทวน 12 · ใหม่ 5",start:"เริ่มเลย"},
+   L:{zh:"ภาษาจีน",de:"ภาษาเยอรมัน",en:"ภาษาอังกฤษ",fr:"ภาษาฝรั่งเศส",th:"ภาษาไทย"}},
+ en:{pick:"Choose the app language",pickp:"Used for this guide and the menus. You can change it later in ⚙️",skip:"Skip to choosing a language",next:"Next ›",back:"‹ Back",
+   t0:"Getting started",h0:n=>`Hi${n?" "+n:""}, I'm Koel`,p0:"Your buddy for languages you can really speak: Chinese, German, English, French and Thai. All free. Here's how it works in 3 short steps.",
+   t1:"Step 1",h1:"Pick a language and a goal",p1:"Tap a language at the top of the app, then choose to speak it in 3 or 6 months. Koel plans the right number of new phrases each day.",
+   t2:"Step 2",h2:"Listen, write, then play",p2:"Press \"Start\" on the Today page. Listen (pick a female or male voice in ⚙️), trace letters along the dotted lines, and review with games.",
+   t3:"Step 3",h3:"A little every day",p3:"Your progress saves to your account automatically, so you can continue on a phone, iPad or computer. Phrases you are about to forget come back for review.",
+   t4:"Ready",h4:"Which language do you want to learn first?",p4:"Pick one. You can switch or add more any time from the language bar at the top.",
+   m:{learn:"What do you want to learn?",within:"Speak it within",months:"months",newp:"New phrase 1/5",mean:"Pleased to meet you",listen:"Listen",write:"Write",game:"Play",today:"Today",streak:"day streak",due:"Review 12 · New 5",start:"Start"},
+   L:{zh:"Chinese",de:"German",en:"English",fr:"French",th:"Thai"}},
+ zh:{pick:"选择应用语言",pickp:"用于本指南和菜单，之后可在 ⚙️ 中更改",skip:"跳过，去选择学习语言",next:"下一步 ›",back:"‹ 返回",
+   t0:"开始使用",h0:n=>`你好${n?"，"+n:""}！我是 Koel`,p0:"陪你学会真正能说的语言：中文、德语、英语、法语和泰语，全部免费。三步就能上手。",
+   t1:"第 1 步",h1:"选择语言和目标",p1:"点击顶部的语言，再选择想在 3 个月或 6 个月内开口说。Koel 会每天为你安排合适数量的新句子。",
+   t2:"第 2 步",h2:"听、写，再玩游戏",p2:"在“今天”页面点击“开始”。听发音（可在 ⚙️ 中选择女声或男声），沿虚线练习书写，再用游戏复习。",
+   t3:"第 3 步",h3:"每天学一点",p3:"学习进度会自动保存到账号，手机、iPad 或电脑都能接着学。快要忘记的句子会自动回来复习。",
+   t4:"准备好了",h4:"想先学哪种语言？",p4:"选一种即可，之后随时可以在顶部语言栏切换或增加。",
+   m:{learn:"想学什么语言",within:"多久能开口说",months:"个月",newp:"新句子 1/5",mean:"很高兴认识你",listen:"听",write:"写",game:"游戏",today:"今天",streak:"天连续学习",due:"复习 12 · 新 5",start:"开始"},
+   L:{zh:"中文",de:"德语",en:"英语",fr:"法语",th:"泰语"}},
+ de:{pick:"App-Sprache wählen",pickp:"Für diese Anleitung und die Menüs. Später in ⚙️ änderbar",skip:"Überspringen und Sprache wählen",next:"Weiter ›",back:"‹ Zurück",
+   t0:"Los geht's",h0:n=>`Hallo${n?" "+n:""}, ich bin Koel`,p0:"Dein Begleiter für Sprachen, die du wirklich sprichst: Chinesisch, Deutsch, Englisch, Französisch und Thai. Alles kostenlos. So geht's in 3 kurzen Schritten.",
+   t1:"Schritt 1",h1:"Sprache und Ziel wählen",p1:"Tippe oben auf eine Sprache und wähle, ob du sie in 3 oder 6 Monaten sprechen willst. Koel plant jeden Tag passend viele neue Sätze.",
+   t2:"Schritt 2",h2:"Hören, schreiben, spielen",p2:"Tippe auf der Seite „Heute“ auf „Start“. Hör zu (weibliche oder männliche Stimme in ⚙️), schreib entlang der gestrichelten Linien und wiederhole mit Spielen.",
+   t3:"Schritt 3",h3:"Jeden Tag ein bisschen",p3:"Dein Fortschritt wird automatisch im Konto gespeichert, auf Handy, iPad oder Computer. Sätze, die du bald vergisst, kommen zur Wiederholung zurück.",
+   t4:"Bereit",h4:"Welche Sprache möchtest du zuerst lernen?",p4:"Wähle eine. Wechseln oder weitere hinzufügen kannst du jederzeit oben in der Sprachleiste.",
+   m:{learn:"Was möchtest du lernen?",within:"Sprechen in",months:"Monaten",newp:"Neuer Satz 1/5",mean:"Freut mich",listen:"Hören",write:"Schreiben",game:"Spielen",today:"Heute",streak:"Tage in Folge",due:"Wiederholen 12 · Neu 5",start:"Start"},
+   L:{zh:"Chinesisch",de:"Deutsch",en:"Englisch",fr:"Französisch",th:"Thai"}},
+ fr:{pick:"Choisissez la langue de l'app",pickp:"Pour ce guide et les menus. Modifiable plus tard dans ⚙️",skip:"Passer au choix de la langue",next:"Suivant ›",back:"‹ Retour",
+   t0:"Pour commencer",h0:n=>`Bonjour${n?" "+n:""}, je suis Koel`,p0:"Votre compagnon pour des langues qu'on parle vraiment : chinois, allemand, anglais, français et thaï. Entièrement gratuit. Voici comment faire en 3 étapes.",
+   t1:"Étape 1",h1:"Choisir une langue et un objectif",p1:"Touchez une langue en haut de l'app, puis choisissez de la parler en 3 ou 6 mois. Koel prévoit le bon nombre de nouvelles phrases chaque jour.",
+   t2:"Étape 2",h2:"Écouter, écrire, puis jouer",p2:"Appuyez sur « Commencer » sur la page Aujourd'hui. Écoutez (voix féminine ou masculine dans ⚙️), tracez les lettres en pointillés et révisez avec des jeux.",
+   t3:"Étape 3",h3:"Un peu chaque jour",p3:"Votre progression est enregistrée automatiquement dans votre compte : continuez sur téléphone, iPad ou ordinateur. Les phrases que vous allez oublier reviennent en révision.",
+   t4:"C'est prêt",h4:"Quelle langue voulez-vous apprendre d'abord ?",p4:"Choisissez-en une. Vous pourrez changer ou en ajouter à tout moment depuis la barre des langues en haut.",
+   m:{learn:"Que voulez-vous apprendre ?",within:"Parler en",months:"mois",newp:"Nouvelle phrase 1/5",mean:"Enchanté",listen:"Écouter",write:"Écrire",game:"Jouer",today:"Aujourd'hui",streak:"jours de suite",due:"Réviser 12 · Nouveau 5",start:"Commencer"},
+   L:{zh:"Chinois",de:"Allemand",en:"Anglais",fr:"Français",th:"Thaï"}}};
+const LEARN_NATIVE=[["zh","中文"],["de","Deutsch"],["en","English"],["fr","Français"],["th","ไทย"]];
 const onbKey=()=>"koel-onb-"+((AUTH.user&&AUTH.user.id)||"local");
 function needOnboarding(){try{if(localStorage.getItem(onbKey()))return false}catch(e){}
   if(AUTH.user)return AUTH.onboarded===false;
@@ -552,31 +641,32 @@ function needOnboarding(){try{if(localStorage.getItem(onbKey()))return false}cat
 function markOnboarded(){try{localStorage.setItem(onbKey(),"1")}catch(e){}
   if(AUTH.user){AUTH.onboarded=true;AUTH.sb.from("profiles").update({onboarded:true}).eq("id",AUTH.user.id).then(()=>{},()=>{})}}
 function showOnboarding(){if($("#onb"))return;
-  const el=document.createElement("div");el.id="onb";el.setAttribute("role","dialog");el.setAttribute("aria-label","เริ่มต้นใช้งาน Koel");document.body.appendChild(el);document.body.style.overflow="hidden";
-  const name=(AUTH.user&&AUTH.user.user_metadata&&AUTH.user.user_metadata.display_name)||"";
-  const SL=[
-   {dur:4200,txt:`<span class="onb-tag">เริ่มต้นใช้งาน</span><h2>สวัสดี${name?" "+esc(name):""} ฉันคือ Koel</h2><p>เพื่อนเรียนภาษาที่พูดได้จริง จีน เยอรมัน อังกฤษ ฝรั่งเศส และไทย ใช้ฟรีทั้งหมด ขอพาดูวิธีใช้ 3 ขั้นสั้น ๆ</p>`,art:()=>`<div class="onb-hero">${mascot("happy",220)}</div>`},
-   {dur:4600,txt:`<span class="onb-tag">ขั้นที่ 1</span><h2>เลือกภาษาและเป้าหมาย</h2><p>แตะภาษาด้านบนของแอป แล้วเลือกว่าอยากคุยได้ใน 3 หรือ 6 เดือน แอปจะจัดประโยคใหม่ให้พอดีทุกวัน</p>`,
-    art:()=>`<div class="onb-phone"><div class="t">อยากเรียนภาษาอะไร</div><div class="g">${ONB_LANGS.map((l,i)=>`<div class="c${i===2?" tap":""}">${l[1]}</div>`).join("")}</div><div class="t" style="margin-top:6px">อยากคุยได้ภายใน</div><div class="g"><div class="c"><b style="color:var(--zh);font-size:20px">3</b><br>เดือน</div><div class="c tap2"><b style="color:var(--zh);font-size:20px">6</b><br>เดือน</div></div></div><div class="onb-pk">${mascot("idle",110)}</div>`},
-   {dur:4600,txt:`<span class="onb-tag">ขั้นที่ 2</span><h2>ฟัง เขียน แล้วเล่นเกม</h2><p>กด "เริ่มเลย" ในหน้าวันนี้ ฟังเสียง (เลือกเสียงผู้หญิงหรือผู้ชายได้ที่ ⚙️) ฝึกเขียนตามเส้นประ แล้วทบทวนด้วยเกม</p>`,
-    art:()=>`<div class="onb-phone"><div class="hint" style="color:var(--zh);font-weight:700;text-align:left">ประโยคใหม่ 1/5</div><div class="big">Nice to meet you.</div><div class="hint">ไนซ์ ทู มีท ยู</div><div style="text-align:center;font-weight:700">ยินดีที่ได้รู้จัก</div><div class="g" style="grid-template-columns:repeat(3,1fr);margin-top:6px"><div class="c tile" style="animation-delay:.6s">🎧<br>ฟัง</div><div class="c tile" style="animation-delay:.9s">✍️<br>เขียน</div><div class="c tile" style="animation-delay:1.2s">🧩<br>เกม</div></div><div class="xp">+10 XP</div></div><div class="onb-pk">${mascot("talk",110)}</div>`},
-   {dur:4200,txt:`<span class="onb-tag">ขั้นที่ 3</span><h2>เรียนวันละนิด ทุกวัน</h2><p>ความคืบหน้าบันทึกในบัญชีอัตโนมัติ เปิดมือถือ iPad หรือคอมก็เรียนต่อได้ ระบบจะเรียกประโยคที่ใกล้ลืมกลับมาให้ทวนเอง</p>`,
-    art:()=>`<div class="onb-phone"><div class="t">วันนี้</div><div class="c" style="display:flex;align-items:center;gap:10px;text-align:left"><b style="font-size:28px;color:#e46a1f">7</b><span>วันติดต่อกัน</span></div><div class="c" style="text-align:left">ทบทวน 12 · ใหม่ 5</div><div class="c tap" style="background:var(--zh);color:#fff;border-color:var(--zh)">เริ่มเลย</div></div><div class="onb-pk">${mascot("win",110)}</div>`},
-   {dur:0,txt:`<span class="onb-tag">พร้อมแล้ว</span><h2>อยากเริ่มเรียนภาษาอะไรก่อน</h2><p>เลือกได้ 1 ภาษา เปลี่ยนหรือเรียนเพิ่มทีหลังได้ทุกเมื่อจากแถบภาษาด้านบน</p>`,
-    art:()=>`<div class="onb-langs">${ONB_LANGS.map((l,i)=>`<button data-l="${l[0]}" style="animation-delay:${i*0.08}s"><b>${l[1]}</b><small>${l[2]}</small></button>`).join("")}</div>`}];
+  const el=document.createElement("div");el.id="onb";el.setAttribute("role","dialog");el.setAttribute("aria-label","Koel");document.body.appendChild(el);document.body.style.overflow="hidden";
+  const name=esc(nick()||(AUTH.user&&AUTH.user.user_metadata&&AUTH.user.user_metadata.display_name)||"");
   let i=0,timer=null,t0=0,raf=0;
+  const X=()=>ONB_I18N[UIL||"th"]||ONB_I18N.th;
+  const SL=[
+   {dur:0,ui:true},
+   {dur:4600,tag:"t0",h:x=>x.h0(name),p:"p0",art:()=>`<div class="onb-hero">${mascot("happy",220)}</div>`},
+   {dur:5200,tag:"t1",h:x=>x.h1,p:"p1",art:x=>`<div class="onb-phone"><div class="t">${x.m.learn}</div><div class="g">${LEARN_NATIVE.map((l,k)=>`<div class="c${k===2?" tap":""}">${l[1]}</div>`).join("")}</div><div class="t" style="margin-top:6px">${x.m.within}</div><div class="g"><div class="c"><b class="num">3</b><br>${x.m.months}</div><div class="c tap2"><b class="num">6</b><br>${x.m.months}</div></div></div><div class="onb-pk">${mascot("idle",110)}</div>`},
+   {dur:5200,tag:"t2",h:x=>x.h2,p:"p2",art:x=>`<div class="onb-phone"><div class="hint lead">${x.m.newp}</div><div class="big">Nice to meet you.</div><div class="hint">/naɪs tə miːt juː/</div><div style="text-align:center;font-weight:700">${x.m.mean}</div><div class="g" style="grid-template-columns:repeat(3,1fr);margin-top:6px"><div class="c tile" style="animation-delay:.6s">🎧<br>${x.m.listen}</div><div class="c tile" style="animation-delay:.9s">✍️<br>${x.m.write}</div><div class="c tile" style="animation-delay:1.2s">🧩<br>${x.m.game}</div></div><div class="xp">+10 XP</div></div><div class="onb-pk">${mascot("talk",110)}</div>`},
+   {dur:4800,tag:"t3",h:x=>x.h3,p:"p3",art:x=>`<div class="onb-phone"><div class="t">${x.m.today}</div><div class="c" style="display:flex;align-items:center;gap:10px;text-align:left"><b style="font-size:28px;color:#e46a1f">7</b><span>${x.m.streak}</span></div><div class="c" style="text-align:left">${x.m.due}</div><div class="c tap startc">${x.m.start}</div></div><div class="onb-pk">${mascot("win",110)}</div>`},
+   {dur:0,tag:"t4",h:x=>x.h4,p:"p4",art:x=>`<div class="onb-langs">${LEARN_NATIVE.map((l,k)=>`<button data-l="${l[0]}" style="animation-delay:${k*0.08}s"><b>${l[1]}</b><small>${x.L[l[0]]}</small></button>`).join("")}</div>`}];
   const finish=lg=>{clearTimeout(timer);cancelAnimationFrame(raf);markOnboarded();if(lg){lang=lg;try{localStorage.setItem(LS+"-lang",lg)}catch(e){}tab="today"}el.remove();document.body.style.overflow="";render();scrollTo(0,0)};
-  const draw=()=>{clearTimeout(timer);cancelAnimationFrame(raf);const s=SL[i],last=i===SL.length-1;
+  const draw=()=>{clearTimeout(timer);cancelAnimationFrame(raf);const s=SL[i],x=X(),last=i===SL.length-1;
+    const body=s.ui?`<div class="onb-art"><div class="onb-hero">${mascot("idle",200)}</div></div><div class="onb-txt"><span class="onb-tag">Koel</span><h2>${x.pick}</h2><p>${x.pickp}</p><div class="onb-langs ui">${UI_LANGS.map(([k,n],j)=>`<button data-ui="${k}" aria-pressed="${(UIL||"")===k}" style="animation-delay:${j*0.06}s"><b>${n}</b></button>`).join("")}</div></div>`
+      :`<div class="onb-art">${s.art(x)}</div><div class="onb-txt"><span class="onb-tag">${x[s.tag]}</span><h2>${s.h(x)}</h2><p>${x[s.p]}</p></div>`;
     el.innerHTML=`<div class="onb-bars">${SL.map((_,k)=>`<i><b style="width:${k<i?100:0}%"></b></i>`).join("")}</div>
-     <div class="onb-top">${mascot("idle",36)}${last?"":`<button class="onb-skip" id="onb-skip">ข้ามไปเลือกภาษา</button>`}</div>
-     <div class="onb-body"><div class="onb-art">${s.art()}</div><div class="onb-txt">${s.txt}</div></div>
-     <div class="onb-nav"><button class="ghost" id="onb-back" ${i?"":"style=\"visibility:hidden\""}>‹ ย้อนกลับ</button>${last?"":`<button class="primary" id="onb-next">ถัดไป ›</button>`}</div>`;
+     <div class="onb-top">${mascot("idle",36)}${last||s.ui?"":`<button class="onb-skip" id="onb-skip">${x.skip}</button>`}</div>
+     <div class="onb-body">${body}</div>
+     <div class="onb-nav"><button class="ghost" id="onb-back" ${i?"":'style="visibility:hidden"'}>${x.back}</button>${last||s.ui?"":`<button class="primary" id="onb-next">${x.next}</button>`}</div>`;
     const bar=el.querySelectorAll(".onb-bars b")[i];
     if(s.dur){t0=performance.now();const tick=()=>{const p=Math.min(1,(performance.now()-t0)/s.dur);bar.style.width=p*100+"%";if(p<1)raf=requestAnimationFrame(tick)};tick();timer=setTimeout(()=>{i++;draw()},s.dur)}
     else bar.style.width="100%";
     const n=$("#onb-next");if(n)n.onclick=()=>{i++;draw()};
     $("#onb-back").onclick=()=>{if(i){i--;draw()}};
     const sk=$("#onb-skip");if(sk)sk.onclick=()=>{i=SL.length-1;draw()};
+    el.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);i=1;draw()});
     el.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>finish(b.dataset.l))};
   draw()}
 function maybeOnboard(){if(DATA&&needOnboarding())showOnboarding()}
@@ -594,6 +684,24 @@ async function idleLogout(){if(!AUTH.user)return;try{await AUTH.sb.auth.signOut(
   authBox("in","","ออกจากระบบอัตโนมัติ เพราะไม่ได้ใช้งานเกิน 1 ชั่วโมง เข้าสู่ระบบอีกครั้งเพื่อเรียนต่อ")}
 setInterval(()=>{if(AUTH.user&&idleTooLong())idleLogout()},60000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&AUTH.user&&idleTooLong())idleLogout()});
+
+
+/* =================== OFFLINE =================== */
+addEventListener("offline",()=>toast(TX("ออฟไลน์อยู่ ยังเรียนต่อได้ ความคืบหน้าจะซิงก์เมื่อกลับมาออนไลน์","You're offline. Keep learning: progress syncs when you're back online.")));
+addEventListener("online",()=>{toast(TX("กลับมาออนไลน์แล้ว กำลังซิงก์","Back online, syncing"));if(dbDoc){pending=true;push()}});
+const OFFC="koel-offline";
+function offFiles(l){const f=(ACHUNKS[l]||[]).map(i=>"a"+i+".js");if(l==="zh"){for(const i of new Set(Object.values(SIDX)))f.push("k"+i+".js");f.push("hw.js")}return f}
+async function offState(l){if(!("caches" in window))return{have:0,n:0};const c=await caches.open(OFFC),f=offFiles(l);let have=0;for(const x of f)if(await c.match(x))have++;return{have,n:f.length}}
+async function offDownload(l,onp){const c=await caches.open(OFFC),f=offFiles(l);let k=0;
+  for(const x of f){if(!(await c.match(x))){const r=await fetch(x,{cache:"no-cache"});if(!r.ok)throw new Error(x);await c.put(x,r)}k++;onp(k,f.length)}}
+async function offPanel(){const box=$("#s-off");if(!box)return;
+  if(!("caches" in window)||!("serviceWorker" in navigator)){box.innerHTML=`<p class="hint" style="margin:0">${TX("เบราว์เซอร์นี้ยังไม่รองรับการใช้งานออฟไลน์","This browser can't work offline")}</p>`;return}
+  const st=await offState(lang),mb=Math.round(st.n*0.42),done=st.n&&st.have===st.n;
+  box.innerHTML=`<p class="hint" style="margin:0">${TX("หลังเปิดแอปครั้งแรก แอปเปิดได้แม้ไม่มีเน็ต บทเรียน เกม และการฝึกเขียนใช้ได้ครบ ความคืบหน้าจะซิงก์เข้าบัญชีเมื่อกลับมาออนไลน์","After the first visit the app opens without internet: lessons, games and writing all work, and progress syncs when you're back online.")}</p>
+   ${st.n?`<div class="bar"><i id="off-bar" style="width:${Math.round(st.have/st.n*100)}%"></i></div>
+   <button class="${done?"ghost":"primary"}" id="off-dl" ${done?"disabled":""}>${done?TX("✓ เสียงภาษา"+DATA[lang].name+" พร้อมใช้ออฟไลน์แล้ว","✓ "+DATA[lang].name+" audio is ready offline"):TX(`ดาวน์โหลดเสียงภาษา${DATA[lang].name}ไว้ใช้ออฟไลน์ (ประมาณ ${mb} MB)`,`Download audio for offline use (about ${mb} MB)`)}</button>`
+   :`<p class="hint" style="margin:0">${TX("ภาษานี้ใช้เสียงของเครื่อง ใช้ออฟไลน์ได้เลย ไม่ต้องดาวน์โหลด","This language uses your device's voice, which works offline")}</p>`}`;
+  const b=$("#off-dl");if(b)b.onclick=async()=>{b.disabled=true;try{await offDownload(lang,(k,n)=>{const br=$("#off-bar");if(br)br.style.width=Math.round(k/n*100)+"%";b.textContent=TX(`กำลังดาวน์โหลด ${k}/${n}`,`Downloading ${k}/${n}`)});toast(TX("ดาวน์โหลดเสร็จ ใช้ออฟไลน์ได้แล้ว","Done: ready offline"))}catch(e){toast(TX("ดาวน์โหลดไม่ครบ ตรวจอินเทอร์เน็ตแล้วลองใหม่","Download stopped. Check the connection and try again"))}offPanel()}}
 
 /* =================== BOOT =================== */
 (async function boot(){

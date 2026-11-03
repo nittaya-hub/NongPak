@@ -213,7 +213,7 @@ button,.opt,.tile,.gcard{-webkit-tap-highlight-color:transparent}
 @keyframes onbIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes onbPhone{from{opacity:0;transform:translateY(40px) rotate(3deg)}to{opacity:1;transform:none}}
 @keyframes onbPop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
-@keyframes onbTap{0%,30%{border-color:var(--line);background:#fff;transform:scale(1)}36%{transform:scale(.95)}42%,100%{border-color:var(--zh);background:#fdeeea;transform:scale(1)}}
+@keyframes onbTap{0%,30%{border-color:var(--line);background:#fff;transform:scale(1)}36%{transform:scale(.95)}42%,100%{border-color:var(--accent);background:var(--accent-soft);transform:scale(1)}}
 @keyframes onbHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @media (prefers-reduced-motion:reduce){#onb *{animation:none!important}}
 .tl-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -224,3 +224,50 @@ button,.opt,.tile,.gcard{-webkit-tap-highlight-color:transparent}
 .pwwrap input{width:100%;padding-right:52px!important}
 .pweye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;background:none;border-radius:10px;color:var(--muted);display:grid;place-items:center;cursor:pointer}
 .pweye:hover,.pweye[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
+/* themed voice list (no native select / slider) */
+.vlist{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding:2px}
+.vopt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:9px 10px;text-align:left;font:500 15px var(--f-th);color:var(--ink);cursor:pointer}
+.vopt[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.vdot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center}
+.vopt[aria-checked="true"] .vdot{border-color:var(--accent)}
+.vopt[aria-checked="true"] .vdot::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.vq{color:var(--good);font-weight:700;font-size:12px}
+.vg{color:var(--muted);font-size:12.5px;background:var(--soft);border-radius:999px;padding:2px 8px}
+.vplay{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--accent);flex:none}
+.vplay svg{width:16px;height:16px;fill:currentColor}
+input[type=range],input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
+.sheet .panel h3{font-size:16px}
+.sheet .field>span{font-weight:600}
+/* onboarding follows the app's accent, not fixed reds */
+.onb-phone .num{color:var(--accent);font-size:20px}
+.onb-phone .lead{color:var(--accent);font-weight:700;text-align:left}
+.onb-phone .startc{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.onb-langs.ui{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:6px}
+.onb-langs.ui button{align-items:center;text-align:center}
+.onb-langs.ui button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.onb-langs.ui button b{font-family:var(--f-th);font-size:22px}
+/* the guide and login are Koel's own brand screens: always the brand red, whatever course is open */
+#onb,#gate{--accent:var(--zh);--accent-soft:color-mix(in srgb,var(--zh) 11%,var(--card))}
+/* right / wrong feedback */
+.gfb{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:10px;max-width:min(92vw,560px);padding:10px 16px;border-radius:14px;font-weight:600;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.14);animation:gfbIn .25s ease-out}
+.gfb b{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:16px;flex:none}
+.gfb.ok{background:color-mix(in srgb,var(--good) 14%,#fff);color:#1f5c38}.gfb.ok b{background:var(--good)}
+.gfb.bad{background:color-mix(in srgb,var(--again) 12%,#fff);color:#8a2a22}.gfb.bad b{background:var(--again)}
+@keyframes gfbIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.gmark{position:fixed;z-index:95;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:30px;font-weight:800;pointer-events:none;animation:gmark .9s ease-out forwards}
+.gmark.ok{background:var(--good)}.gmark.bad{background:var(--again)}
+@keyframes gmark{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(.9)}}
+.ws button.miss{background:color-mix(in srgb,var(--again) 35%,var(--card));color:#fff}
+.jp.bad path{stroke:var(--again)!important;stroke-width:4;fill:color-mix(in srgb,var(--again) 10%,#fff)!important}
+.fo .it.miss{filter:drop-shadow(0 0 0 var(--again)) drop-shadow(0 0 6px var(--again))}
+/* no text sliding under a see-through menu bar */
+nav.tabs{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:none}
+/* flashcards grow with their content instead of spilling */
+.fc .in{display:grid;min-height:340px}
+.fc .face{position:relative;inset:auto;grid-area:1/1;overflow:visible}
+/* big letter and its name never touch */
+.glyph{line-height:1.35;padding-top:6px}
+.glyph .tmk{display:block;margin:0 auto}
+.reveal .roman{margin-top:4px}
+.gfb .pk{flex:none;margin:-10px 0 -12px -6px}
+.fo .deco{z-index:0}.fo .it{z-index:1}

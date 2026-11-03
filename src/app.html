@@ -526,11 +526,12 @@ function playSrc(src,t,slow){try{player.pause();player.src=src;player.playbackRa
 let speakTok=0;
 function speak(t,slow){
   if(!t)return;const tok=++speakTok,key=hk(lang+"|"+t);
-  try{if(webTTS)speechSynthesis.cancel()}catch(e){}
-  if(AUDIO[key])return playSrc(AUDIO[key],t,slow);
+  if(AUDIO[key]){try{if(webTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}catch(e){}return playSrc(AUDIO[key],t,slow)}
   const i=AIDX[key];
-  if(i==null)return webSpeak(t,slow);
-  loadChunk(i).then(()=>{if(tok!==speakTok)return;if(AUDIO[key])playSrc(AUDIO[key],t,slow);else webSpeak(t,slow)}).catch(()=>{if(tok===speakTok)webSpeak(t,slow)});
+  if(i==null){try{player.pause()}catch(e){}return webSpeak(t,slow)}
+  /* the clip's file is still downloading: if it takes longer than ~0.8 s, use the device voice instead (never both) */
+  const late=setTimeout(()=>{if(tok===speakTok){speakTok++;webSpeak(t,slow)}},800);
+  loadChunk(i).then(()=>{clearTimeout(late);if(tok!==speakTok)return;if(AUDIO[key]){try{if(webTTS&&speechSynthesis.speaking)speechSynthesis.cancel()}catch(e){}playSrc(AUDIO[key],t,slow)}else webSpeak(t,slow)}).catch(()=>{clearTimeout(late);if(tok===speakTok)webSpeak(t,slow)});
 }
 let TSEX=null;
 function sxOf(t){if(lang!=="th")return null;if(!TSEX){TSEX={};for(const c of DATA.th.cards)if(c.sx){TSEX[c.t]=c.sx;if(c.ex)TSEX[c.ex]=c.sx}}
@@ -539,6 +540,7 @@ const isFemaleV=v=>/female|woman|kanya|premwadee|narisa|achara|pattara|หญิ
 const isMaleV=v=>!isFemaleV(v)&&/\bmale\b|\bman\b|niwat|ชาย/i.test(v.name||"");
 function webSpeak(t,slow){
   if(!webTTS){toast("เครื่องนี้ไม่มีเสียงอ่านสำหรับประโยคนี้");return}
+  if(window.voiceMissing&&voiceMissing())warnNoVoice();
   const code=DATA[lang].voice;
   const u=new SpeechSynthesisUtterance(String(t).replace(/……|…|\.\.\./g," "));u.lang=code;u.rate=slow?.6:.95;
   let v=voices.find(v=>(v.lang||"").replace("_","-").startsWith(code))||voices.find(v=>(v.lang||"").startsWith(code.slice(0,2)));
@@ -546,7 +548,7 @@ function webSpeak(t,slow){
   if(sx){const th=voices.filter(x=>(x.lang||"").toLowerCase().startsWith("th")),hit=th.find(sx==="m"?isMaleV:isFemaleV);
     if(hit)v=hit;else if(sx==="m")u.pitch=.55;else if(v&&isMaleV(v))u.pitch=1.4;else u.pitch=1.12}
   if(v)u.voice=v;
-  try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){}
+  if(window.ttsSpeak)ttsSpeak(u);else try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){}
 }
 function audioBtns(t){if(!hasTTS)return"";return`<div class="audio"><button class="play" data-say="${esc(t)}">${ICON_PLAY} ฟัง</button><button class="play" data-say="${esc(t)}" data-slow="1">${ICON_SLOW} ช้า</button></div>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-say]");if(b){e.stopPropagation();speak(b.dataset.say,!!b.dataset.slow)}});
@@ -960,7 +962,10 @@ const chunkP={};
 function loadChunk(i){if(chunkP[i])return chunkP[i];return chunkP[i]=new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="a"+i+".js";sc.async=true;sc.onload=()=>ok();sc.onerror=()=>{delete chunkP[i];sc.remove();no()};document.head.appendChild(sc)})}
 function prefetchTexts(ts){const need=new Set();for(const t of ts){const i=AIDX[hk(lang+"|"+t)];if(i!=null&&!chunkP[i])need.add(i)}[...need].slice(0,6).forEach(i=>loadChunk(i).catch(()=>{}))}
 let bgL=null;
-function loadAudio(l){if(bgL===l)return;bgL=l;const list=(ACHUNKS[l]||[]).slice();
+function loadAudio(l){if(bgL===l)return;bgL=l;const list=(ACHUNKS[l]||[]).slice();if(navigator.connection&&navigator.connection.saveData)return;
+  setTimeout(()=>step0(),4000);function step0(){step()}
+  function step(){if(bgL!==l||!list.length)return;const i=list.shift();if(chunkP[i])return setTimeout(step,50);loadChunk(i).catch(()=>{}).then(()=>setTimeout(step,600))}}
+function _oldLoadAudio(l){const list=[];
   (function step(){if(bgL!==l||!list.length)return;const i=list.shift();if(chunkP[i])return setTimeout(step,50);loadChunk(i).catch(()=>{}).then(()=>setTimeout(step,300))})()}
 
 /* ---------- alphabet ---------- */
