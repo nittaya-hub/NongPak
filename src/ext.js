@@ -85,6 +85,7 @@ function openSettings(){
     <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ภาษาของแอป","App language")}</h3><div class="seg2" role="group">${UI_LANGS.map(([k,n])=>`<button type="button" data-ui="${k}" aria-pressed="${(UIL||"th")===k}">${n}</button>`).join("")}</div><p class="hint" style="margin:0">${TX("ใช้กับหน้าวิธีใช้งาน เมนู และหน้าใหม่ ๆ ส่วนคำแปลบทเรียนยังเป็นภาษาไทย","Used for the guide, menus and new screens. Lesson translations stay in Thai.")}</p></div>
     <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ใช้งานออฟไลน์","Offline")} ${navigator.onLine?"":`<span class="chip warn">${TX("ออฟไลน์อยู่","offline now")}</span>`}</h3><div id="s-off" style="display:flex;flex-direction:column;gap:10px"></div></div>
     ${lang==="th"?"":`<div class="panel" style="display:flex;flex-direction:column;gap:10px"><h3>${TX("ภาษาของคำแปลและคำอธิบาย","Translations and explanations in")}</h3><div class="seg2" role="group">${[["th","ไทย"],["en","English"]].map(([k,n])=>`<button type="button" data-trl="${k}" aria-pressed="${TRL()===k}">${n}</button>`).join("")}</div><p class="hint" style="margin:0">${TX("คำแปล คำอธิบาย ตัวอย่าง และชื่อหมวดในบทเรียน ตอนนี้มีภาษาไทยและอังกฤษ","Meanings, notes, examples and topic names in lessons. Thai and English are available now.")}</p></div>`}
+    <button class="gcard" id="s-dash"><span class="gi">📊</span><span><b>${TX("แดชบอร์ดการเรียน","Learning dashboard")}</b><small>${TX("เรียนไปถึงไหน ต้องทบทวนอะไร ทุกภาษา ›","Progress and reviews for every language ›")}</small></span></button>
     <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>${TX("ดูวิธีเริ่มใช้งานอีกครั้ง","Watch the quick guide again")}</b><small>${TX("แนะนำการใช้แอปสั้น ๆ","How to use Koel")}</small></span></button>
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>${TX("เสียงอ่าน (ใช้กับทุกภาษา)","Voice (all languages)")}</h3>
@@ -99,6 +100,7 @@ function openSettings(){
   offPanel();
   $("#s-prof").onclick=()=>{closeSheet();openProfile()};
   $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
+  $("#s-dash").onclick=()=>{closeSheet();openDash()};
   document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{saveV({mode:b.dataset.vm,name:""});openSettings()});
   document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;saveV({name:n});document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
     const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)});
@@ -821,7 +823,7 @@ function openDash(){
   const meaning=c=>(TRL&&TRL()==="en"&&c.en&&c.en.m)||c.m||"";
   const row=(c,side)=>`<div class="item dash-it"><div class="t han">${esc(c.t)}</div><div class="m">${esc(meaning(c))}</div><div class="side">${side}<button class="iconbtn" data-say="${esc(c.t)}" aria-label="ฟัง" style="width:34px;height:34px">${ICON_PLAY}</button></div></div>`;
   const ago=t=>{const d=Math.floor((Date.now()-t)/DAY);return d<1?TX("วันนี้","today"):TX(d+" วันแล้ว",d+" days ago")};
-  const others=LANGS.filter(l=>l!==L&&DATA[l]).map(l=>{const o=dashStats(l);return{l,o}}).filter(x=>x.o.seen);
+  const others=LANGS.filter(l=>l!==L&&DATA[l]).map(l=>{const o=dashStats(l);return{l,o}}).filter(x=>x.o.n);
   const tps=ds.tps.slice().sort((a,b)=>(b.seen>0)-(a.seen>0)||b.seen/b.n-a.seen/a.n);
   const el=overlay(TX("แดชบอร์ดการเรียน","Learning dashboard"),`
    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
@@ -841,7 +843,7 @@ function openDash(){
    <div class="panel"><h3>${TX("ความคืบหน้าแต่ละหมวด","Progress by topic")}</h3><p class="hint" style="margin:0 0 6px">${TX("แตะหมวดเพื่อฝึกหมวดนั้น · สีเข้ม = จำได้ดี สีอ่อน = เรียนแล้ว","Tap a topic to practise it · dark = know well, light = learned")}</p>
     <div class="dash-tp">${tps.map(t=>`<button class="dash-t" data-dt="${esc(t.g)}"><span class="nm">${esc(t.name)}</span><span class="dash-bar sm"><i class="k" style="width:${t.known/t.n*100}%"></i><i class="s" style="width:${(t.seen-t.known)/t.n*100}%"></i></span><span class="ct">${t.seen}/${t.n}</span></button>`).join("")}</div></div>
    ${ds.tests.length?`<div class="panel"><h3>${TX("ผลทดสอบล่าสุด","Recent tests")}</h3><div class="list">${ds.tests.map(t=>`<div class="item" style="grid-template-columns:1fr auto"><div class="m" style="font-weight:600">${esc(t.title)}</div><div class="side"><span class="chip ${t.pct>=75?"ok":"warn"}">${t.pct}%</span></div><div class="m hint" style="font-size:12.5px">${new Date(t.d).toLocaleDateString(LOC(),{day:"numeric",month:"short"})}</div></div>`).join("")}</div></div>`:""}
-   ${others.length?`<div class="panel"><h3>${TX("ภาษาอื่นที่เรียนอยู่","Your other languages")}</h3><div class="dash-tp">${others.map(({l,o})=>`<button class="dash-t" data-dl="${l}"><span class="nm">${TX("ภาษา"+VNAME[l][0],VNAME[l][1])}</span><span class="dash-bar sm"><i class="k" style="width:${o.known/o.n*100}%"></i><i class="s" style="width:${(o.seen-o.known)/o.n*100}%"></i></span><span class="ct">${o.due.length?`<b style="color:var(--again)">${TX("ทวน "+o.due.length,o.due.length+" due")}</b>`:o.seen+"/"+o.n}</span></button>`).join("")}</div></div>`:""}`);
+   ${others.length?`<div class="panel"><h3>${TX("ภาษาอื่น (แตะเพื่อดู)","Other languages (tap to view)")}</h3><div class="dash-tp">${others.map(({l,o})=>`<button class="dash-t" data-dl="${l}"><span class="nm">${TX("ภาษา"+VNAME[l][0],VNAME[l][1])}</span><span class="dash-bar sm"><i class="k" style="width:${o.known/o.n*100}%"></i><i class="s" style="width:${(o.seen-o.known)/o.n*100}%"></i></span><span class="ct">${o.due.length?`<b style="color:var(--again)">${TX("ทวน "+o.due.length,o.due.length+" due")}</b>`:o.seen+"/"+o.n}</span></button>`).join("")}</div></div>`:""}`);
   const go=cards=>{if(!cards.length)return;closeStudy();startSession(cards)};
   const r=$("#d-rev");if(r)r.onclick=()=>go(dashStats(L).due.slice(0,60));
   const w=$("#d-weak");if(w)w.onclick=()=>go(weak());
@@ -850,7 +852,7 @@ function openDash(){
   el.querySelectorAll("[data-say]").forEach(b=>b.onclick=e=>{e.stopPropagation();speak(b.dataset.say)});
 }
 /* entry points: a card on the Today tab and in Settings */
-const _renderD=render;render=function(){_renderD();if(tab==="today"&&DATA&&$("#view")&&!$("#d-open")&&S().goal){
+const _renderD=render;render=function(){_renderD();if(tab==="today"&&DATA&&$("#view")&&!$("#d-open")){
   const ds=dashStats(lang);const b=document.createElement("button");b.className="gcard";b.id="d-open";
   b.innerHTML=`<span class="gi">📊</span><span><b>${TX("แดชบอร์ดการเรียน","Learning dashboard")}</b><small>${TX(`เรียนแล้ว ${ds.seen}/${ds.n} · ต้องทบทวน ${ds.due.length} · พลาดบ่อย ${ds.weak.length} ›`,`Learned ${ds.seen}/${ds.n} · ${ds.due.length} due · ${ds.weak.length} often missed ›`)}</small></span>`;
   b.onclick=openDash;$("#view").prepend(b)}};
