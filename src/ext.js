@@ -22,11 +22,16 @@ $("#gear").onclick=()=>openSettings();
 const VKEY="koel-voice";
 let VS={};try{VS=JSON.parse(localStorage.getItem(VKEY)||"{}")}catch(e){}
 /* female/male and speed are chosen once and apply to every language; a specific voice name stays per language */
-const vset=()=>Object.assign({mode:lang==="th"?"f":"app",name:"",rate:1},VS[lang]||{},VS._g?{mode:VS._g}:{},VS._rate?{rate:VS._rate}:{});
+let VDRAFT=null;   /* unsaved choice in Settings: used only for "Try it" until the learner presses Save */
+const vsaved=()=>Object.assign({mode:lang==="th"?"f":"app",name:"",rate:1},VS[lang]||{},VS._g?{mode:VS._g}:{},VS._rate?{rate:VS._rate}:{});
+const vset=()=>VDRAFT?Object.assign(vsaved(),VDRAFT,VDRAFT.names?{name:VDRAFT.names[lang]||""}:{}):vsaved();
 function saveV(o){if("mode" in o){VS._g=o.mode;for(const l in VS)if(l[0]!=="_"&&VS[l])VS[l].name=""}
   if("rate" in o)VS._rate=o.rate;
   VS[lang]=Object.assign({},VS[lang]||{},{name:"name" in o?o.name:(VS[lang]||{}).name||""});
   try{localStorage.setItem(VKEY,JSON.stringify(VS))}catch(e){}}
+/* saved voice settings travel with the account (inside the synced progress) */
+function voiceToStore(){try{store.vs=Object.assign({},VS,{at:Date.now()});save()}catch(e){}}
+function voiceFromStore(){try{if(store.vs&&(store.vs.at||0)>(VS.at||0)){VS=Object.assign({},store.vs);localStorage.setItem(VKEY,JSON.stringify(VS))}}catch(e){}}
 const FEMALE=/female|woman|หญิง|kanya|narisa|premwadee|achara|pattara|tingting|ting-ting|meijia|mei-jia|sinji|lili|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomo|huihui|yaoyao|anna|petra|helena|katja|hedda|amala|marlene|vicki|samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|aria|jenny|serena|fiona|kate|nicky|emma|michelle|sonia|libby|natasha|amelie|amélie|audrey|marie|aurelie|aurélie|julie|hortense|denise|virginie|celine|céline|eloise|vivienne|brigitte|seraphina|elke|gisela|louisa|maja|sara|siri female|flo\b|grandma|sandy|shelley|kathy|princess|zarvox|mei-jia|sin-ji|yuna|alice|joana|monica|paulina|zuzana/i;
 const MALE=/\bmale\b|\bman\b|ชาย|niwat|li-mu|limu|yunxi|yunyang|yunjian|yunhao|kangkang|markus|yannick|stefan|conrad|killian|kasper|florian|ralf|alex\b|daniel|fred\b|tom\b|aaron|arthur|rishi|oliver|gordon|david|mark\b|guy\b|ryan|christopher|eric\b|brian|andrew|thomas|nicolas|henri|paul\b|claude|remy|rémy|jacques|alain|maurice|jerome|yves|siri male|eddy|reed|rocko|grandpa|ralph|albert|junior|bruce|jacques|bahh|boing|xander|luca|jorge|diego/i;
 const vGender=v=>FEMALE.test(v.name||"")?"f":MALE.test(v.name||"")&&!/female/i.test(v.name)?"m":"";
@@ -71,7 +76,7 @@ document.addEventListener("pointerdown",ttsUnlock,{capture:true,once:true});
 /* =================== SETTINGS SHEET =================== */
 function sheet(html){closeSheet();const bg=document.createElement("div");bg.className="sheet-bg";bg.id="sheet";bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
   bg.addEventListener("click",e=>{if(e.target===bg)closeSheet()});document.body.appendChild(bg);return bg}
-function closeSheet(){const s=$("#sheet");if(s)s.remove()}
+function closeSheet(){const s=$("#sheet");if(s)s.remove();VDRAFT=null}
 function openSettings(){
   if(!DATA)return;const cfg=vset(),vs=langVoices(),gm=cfg.mode;
   const list=(gm==="f"||gm==="m")?vs.filter(v=>vGender(v)===gm||!vGender(v)):vs;
@@ -93,7 +98,8 @@ function openSettings(){
       ${gm==="f"||gm==="m"?`${hasG(gm)?"":`<p class="tip" style="margin:0">${TX("เครื่องนี้ยังไม่มีเสียง"+(gm==="m"?"ผู้ชาย":"ผู้หญิง")+"ของภาษานี้ แอปจะใช้เสียงที่มีอยู่แทน ติดตั้งเสียงเพิ่มได้ฟรีในการตั้งค่าเครื่อง (ดูด้านล่าง)","This device has no "+(gm==="m"?"male":"female")+" voice for this language yet, so the app uses the voice it has. You can add voices for free in your device settings (see below).")}</p>`}
       <div class="field"><span>${TX("เลือกเสียง","Voice")}</span><div class="vlist" role="radiogroup">${[{name:"",label:TX("ให้แอปเลือกเสียงที่ดีที่สุด","Let the app pick the best voice")}].concat(list.map(v=>({name:v.name,label:v.name.replace(/\s*\(.*\)\s*$/,""),g:vGender(v),q:vQuality(v)===2}))).map(v=>`<button type="button" class="vopt" role="radio" data-vn="${esc(v.name)}" aria-checked="${(cfg.name||"")===v.name}"><span class="vdot"></span><span style="flex:1;min-width:0">${esc(v.label)}${v.q?` <small class="vq">${TX("คุณภาพสูง","high quality")}</small>`:""}</span>${v.g?`<small class="vg">${v.g==="f"?TX("หญิง","female"):TX("ชาย","male")}</small>`:""}${v.name?`<span class="vplay" data-vtest="${esc(v.name)}" aria-label="ฟัง">${ICON_PLAY}</span>`:""}</button>`).join("")}</div></div>`:""}
       <div class="field"><span>${TX("ความเร็วในการพูด","Speaking speed")}</span><div class="seg2" role="group">${[[0.8,TX("ช้า","Slow")],[0.9,TX("ค่อนข้างช้า","A bit slow")],[1,TX("ปกติ","Normal")],[1.1,TX("เร็ว","Fast")]].map(([r,l])=>`<button type="button" data-rate="${r}" aria-pressed="${Math.abs((cfg.rate||1)-r)<.01}">${l}</button>`).join("")}</div></div>
-      <button class="ghost" id="s-test">▶ ${TX("ทดลองฟัง","Try it")}</button>
+      <div class="dash-act"><button class="ghost" id="s-test">▶ ${TX("ทดลองฟัง","Try it")}</button><button class="primary" id="s-vsave" disabled>${TX("บันทึกการตั้งค่าเสียง","Save voice settings")}</button></div>
+      <p class="hint" id="s-vmsg" style="margin:0">${TX("เลือกแล้วกดทดลองฟังได้ กด บันทึก เพื่อใช้กับทุกภาษาและทุกเครื่องที่ล็อกอิน","Pick and try, then press Save to use it in every language and on every device you sign in to")}</p>
       <p class="hint" style="margin:0">${TX("เสียงฟรีทั้งหมด ใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ Enhanced หรือ Premium (ฟรี) · Mac ไปที่ การตั้งค่าระบบ › การช่วยการเข้าถึง › เนื้อหาที่พูด · Windows/Edge มีเสียง Natural ให้อัตโนมัติ","All voices are free and come from your device. For more natural voices: on iPad/iPhone go to Settings › Accessibility › Spoken Content › Voices and download an Enhanced or Premium voice (free) · on Mac: System Settings › Accessibility › Spoken Content · Windows/Edge has Natural voices built in.")}</p>
     </div>`);
   $("#s-x").onclick=closeSheet;
@@ -101,12 +107,17 @@ function openSettings(){
   $("#s-prof").onclick=()=>{closeSheet();openProfile()};
   $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
   $("#s-dash").onclick=()=>{closeSheet();openDash()};
-  document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{saveV({mode:b.dataset.vm,name:""});openSettings()});
-  document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;saveV({name:n});document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
+  const draft=()=>VDRAFT||(VDRAFT={mode:vsaved().mode,rate:vsaved().rate,names:{[lang]:vsaved().name}});
+  document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{const d=draft();d.mode=b.dataset.vm;d.names={};const sc=$("#sheet .sheet").scrollTop;const keep=VDRAFT;openSettings();VDRAFT=keep;voiceDirty();$("#sheet .sheet").scrollTop=sc});
+  document.querySelectorAll("[data-vn]").forEach(b=>b.onclick=e=>{const n=b.dataset.vn;draft().names[lang]=n;voiceDirty();document.querySelectorAll("[data-vn]").forEach(x=>x.setAttribute("aria-checked",x===b));
     const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)});
-  document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{saveV({rate:+b.dataset.rate});document.querySelectorAll("[data-rate]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+  document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{draft().rate=+b.dataset.rate;voiceDirty();document.querySelectorAll("[data-rate]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   document.querySelectorAll("[data-ui]").forEach(b=>b.onclick=()=>{setUI(b.dataset.ui);applyContentLang();render();openSettings()});
   document.querySelectorAll("[data-trl]").forEach(b=>b.onclick=()=>{setTRL(b.dataset.trl);openSettings()});
+  const sv=$("#s-vsave");if(sv)sv.onclick=()=>{if(!VDRAFT)return;const d=VDRAFT;VDRAFT=null;
+    saveV({mode:d.mode,rate:d.rate});for(const l in (d.names||{})){const pl=lang;lang=l;saveV({name:d.names[l]||""});lang=pl}
+    voiceToStore();sv.disabled=true;sv.textContent=TX("บันทึกแล้ว ✓","Saved ✓");toast(TX("บันทึกการตั้งค่าเสียงแล้ว ใช้กับทุกภาษา","Voice settings saved for every language"))};
+  if(VDRAFT)voiceDirty();
   $("#s-test").onclick=()=>{const c=DATA[lang].cards.find(c=>c.g==="s_friend")||DATA[lang].cards[0];speak(c.t)};
   const so=$("#s-out");if(so)so.onclick=async()=>{await AUTH.sb.auth.signOut();try{localStorage.removeItem(PWK)}catch(e){};location.reload()};
   const si=$("#s-in");if(si)si.onclick=()=>{closeSheet();showAuth()};
@@ -556,7 +567,7 @@ async function afterUnlock(){
   const uid=AUTH.user.id;
   dbDoc={get:async()=>{const{data,error}=await AUTH.sb.from("progress").select("data").eq("user_id",uid).maybeSingle();if(error)throw error;return{exists:!!data,data:()=>({json:JSON.stringify(data?data.data:{})})}},
          set:async o=>{const{error}=await AUTH.sb.from("progress").upsert({user_id:uid,data:JSON.parse(o.json),updated_at:new Date().toISOString()});if(error)throw error}};
-  try{const snap=await dbDoc.get();if(snap.exists){const o=JSON.parse(snap.data().json||"{}");if(o&&o.updated){store=merge(store,o);try{localStorage.setItem(LS,JSON.stringify(store))}catch(e){}if(!$("#study")||$("#study").hidden)render()}}
+  try{const snap=await dbDoc.get();if(snap.exists){const o=JSON.parse(snap.data().json||"{}");if(o&&o.updated){store=merge(store,o);voiceFromStore();try{localStorage.setItem(LS,JSON.stringify(store))}catch(e){}if(!$("#study")||$("#study").hidden)render()}}
     pending=true;await push()}catch(e){setSync("local")}
   try{await AUTH.sb.from("profiles").update({last_seen:new Date().toISOString()}).eq("id",uid)}catch(e){}
 }
@@ -856,3 +867,6 @@ const _renderD=render;render=function(){_renderD();if(tab==="today"&&DATA&&$("#v
   const ds=dashStats(lang);const b=document.createElement("button");b.className="gcard";b.id="d-open";
   b.innerHTML=`<span class="gi">📊</span><span><b>${TX("แดชบอร์ดการเรียน","Learning dashboard")}</b><small>${TX(`เรียนแล้ว ${ds.seen}/${ds.n} · ต้องทบทวน ${ds.due.length} · พลาดบ่อย ${ds.weak.length} ›`,`Learned ${ds.seen}/${ds.n} · ${ds.due.length} due · ${ds.weak.length} often missed ›`)}</small></span>`;
   b.onclick=openDash;$("#view").prepend(b)}};
+
+function voiceDirty(){const b=$("#s-vsave"),m=$("#s-vmsg");if(b){b.disabled=false;b.textContent=TX("บันทึกการตั้งค่าเสียง","Save voice settings")}
+  if(m)m.innerHTML=`<b style="color:var(--again)">${TX("ยังไม่ได้บันทึก","Not saved yet")}</b> · ${TX("กด บันทึก เพื่อใช้จริงในแอป","press Save to use it in the app")}`}

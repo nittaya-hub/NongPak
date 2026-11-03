@@ -420,7 +420,7 @@ let lang="zh", tab="today", libTopic=null, libAdd=false;
 function blankLang(){return{cards:{},custom:[],goal:null,streak:0,lastDay:null,newDay:null,newCount:0,xpDay:null,xp:0,xpTotal:0,pri:null,tests:[],log:{}}}
 let store={zh:blankLang(),de:blankLang(),en:blankLang(),fr:blankLang(),th:blankLang(),updated:0};
 const LS="phrase-app-v2";
-function norm(o){const r={zh:blankLang(),de:blankLang(),en:blankLang(),fr:blankLang(),th:blankLang(),updated:(o&&o.updated)||0};if(o)for(const k of LANGS)r[k]=Object.assign(blankLang(),o[k]||{});return r}
+function norm(o){const r={zh:blankLang(),de:blankLang(),en:blankLang(),fr:blankLang(),th:blankLang(),updated:(o&&o.updated)||0};if(o)for(const k of LANGS)r[k]=Object.assign(blankLang(),o[k]||{});if(o&&o.vs)r.vs=o.vs;return r}
 /* merge two copies so nothing learned on any device is lost */
 function merge(a,b){
   a=norm(a);b=norm(b);const r=norm(null);
@@ -438,7 +438,7 @@ function merge(a,b){
     const tm={};for(const t of[...(x.tests||[]),...(y.tests||[])])tm[t.d]=t;z.tests=Object.values(tm).sort((p,q)=>p.d-q.d).slice(-40);
     z.log={};for(const L of[x.log||{},y.log||{}])for(const[k2,v2]of Object.entries(L))z.log[k2]=Math.max(z.log[k2]||0,v2);
   }
-  r.updated=Math.max(a.updated,b.updated);return r;
+  r.updated=Math.max(a.updated,b.updated);const va=a.vs,vb=b.vs;if(va||vb)r.vs=!va?vb:!vb?va:((vb.at||0)>(va.at||0)?vb:va);return r;
 }
 try{const o=JSON.parse(localStorage.getItem(LS)||"null");if(o)store=norm(o)}catch(e){}
 try{const bk=JSON.parse(localStorage.getItem(LS+"-bak")||"null");if(bk)store=merge(store,bk)}catch(e){}
