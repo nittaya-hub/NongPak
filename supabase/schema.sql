@@ -12,6 +12,9 @@ create table if not exists public.profiles (
   last_seen timestamptz
 );
 
+-- columns added in later versions (safe to re-run)
+alter table public.profiles add column if not exists onboarded boolean not null default false;
+
 -- 2) progress: the learner's saved progress (all languages) as JSON
 create table if not exists public.progress (
   user_id uuid primary key references auth.users(id) on delete cascade,

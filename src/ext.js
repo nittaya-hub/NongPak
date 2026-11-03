@@ -58,6 +58,8 @@ function openSettings(){
       <div class="row-flex" style="flex-wrap:wrap">${AUTH.role==="admin"?`<button class="primary" id="s-admin" style="width:auto">หน้าแอดมิน</button>`:""}<button class="ghost" id="s-out">ออกจากระบบ</button></div></div>`
     :AUTH.ready?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h3>บัญชี</h3><p class="hint" style="margin:0">ยังไม่ได้ล็อกอิน ความคืบหน้าเก็บไว้ในเครื่องนี้เท่านั้น</p><button class="primary" id="s-in">ล็อกอิน / สมัครสมาชิก (ฟรี)</button></div>`:"";
   sheet(`<div class="row-flex" style="justify-content:space-between"><h3>ตั้งค่า</h3><button class="x" id="s-x" aria-label="ปิด">×</button></div>
+    <button class="gcard" id="s-prof"><span class="gi">${mascot("happy",40)}</span><span><b>${esc(nick()||"ผู้เรียน Koel")}</b><small>ข้อมูลผู้เรียน ชื่อเล่น และไทม์ไลน์พัฒนาการ ›</small></span></button>
+    <button class="gcard" id="s-onb"><span class="gi">▶</span><span><b>ดูวิธีเริ่มใช้งานอีกครั้ง</b><small>แนะนำการใช้แอปสั้น ๆ</small></span></button>
     ${acct}
     <div class="panel" style="display:flex;flex-direction:column;gap:12px"><h3>เสียงอ่านภาษา${esc(DATA[lang].name)}</h3>
       <div class="seg2" role="group" aria-label="แบบเสียง">${[["app",lang==="fr"?"อัตโนมัติ":"เสียงในแอป (เดิม)"],["f","👩 เสียงผู้หญิง"],["m","👨 เสียงผู้ชาย"]].map(([k,l])=>`<button data-vm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>
@@ -68,6 +70,8 @@ function openSettings(){
       <p class="hint" style="margin:0">เสียงฟรีทั้งหมด เสียงผู้หญิง/ชายใช้เสียงที่มีในเครื่อง ถ้าอยากได้เสียงที่เป็นธรรมชาติขึ้น: iPad/iPhone ไปที่ การตั้งค่า › การช่วยการเข้าถึง › เนื้อหาที่พูด › เสียง แล้วดาวน์โหลดเสียงแบบ "Enhanced/Premium" ของภาษานั้น (ฟรี) · Windows/Edge มีเสียง Natural ให้อัตโนมัติ</p>
     </div>`);
   $("#s-x").onclick=closeSheet;
+  $("#s-prof").onclick=()=>{closeSheet();openProfile()};
+  $("#s-onb").onclick=()=>{closeSheet();showOnboarding()};
   document.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{saveV({mode:b.dataset.vm,name:""});openSettings()});
   const sv=$("#s-voice");if(sv)sv.onchange=()=>saveV({name:sv.value});
   $("#s-rate").oninput=e=>saveV({rate:+e.target.value});
@@ -415,7 +419,7 @@ function loadSB(){if(window.supabase)return Promise.resolve();return new Promise
 async function initSB(){if(!KOEL_CFG.supabaseUrl||!KOEL_CFG.supabaseKey)return false;
   try{await loadSB();AUTH.sb=supabase.createClient(KOEL_CFG.supabaseUrl,KOEL_CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});AUTH.ready=true;return true}catch(e){return false}}
 async function loadProfile(){const{data:{user}}=await AUTH.sb.auth.getUser();AUTH.user=user||null;if(!user)return null;
-  try{const{data}=await AUTH.sb.from("profiles").select("role,status,display_name").eq("id",user.id).maybeSingle();if(data){AUTH.role=data.role||"user";AUTH.status=data.status||"active"}}catch(e){}
+  try{const{data}=await AUTH.sb.from("profiles").select("role,status,display_name,onboarded").eq("id",user.id).maybeSingle();if(data){AUTH.role=data.role||"user";AUTH.status=data.status||"active";AUTH.onboarded=data.onboarded!==true?false:true;if(data.display_name)AUTH.nick=data.display_name}}catch(e){}
   return user}
 async function contentKey(){try{const{data,error}=await AUTH.sb.from("app_secrets").select("value").eq("key","content_pw").maybeSingle();if(error)return null;return data&&data.value}catch(e){return null}}
 function authBox(mode,msg,ok){const g=$("#gate")||Object.assign(document.createElement("div"),{id:"gate"});if(!g.parentNode)document.body.appendChild(g);document.body.style.overflow="hidden";
@@ -449,7 +453,7 @@ function newPasswordBox(){const g=$("#gate")||Object.assign(document.createEleme
 /* fall back to the original password screen (also how the admin seeds the content key) */
 function codeGate(msg){gateBoot().then(()=>{const h=$("#gate h1");if(h&&msg)h.insertAdjacentHTML("afterend",`<p class="hint">${msg}</p>`);
   const f=$("#gform");if(f&&AUTH.ready&&!AUTH.user)f.insertAdjacentHTML("beforeend",`<button type="button" class="linkbtn" id="g-back">เข้าสู่ระบบด้วยอีเมลแทน</button>`);const b=$("#g-back");if(b)b.onclick=()=>{$("#gate").remove();showAuth()}})}
-async function signedIn(){await loadProfile();
+async function signedIn(){idleT=0;touchActive();await loadProfile();
   if(AUTH.status==="blocked"){await AUTH.sb.auth.signOut();return authBox("in","บัญชีนี้ถูกระงับ ติดต่อผู้ดูแล")}
   if(DATA){afterUnlock();return}
   let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
@@ -458,6 +462,7 @@ async function signedIn(){await loadProfile();
   codeGate(AUTH.role==="admin"?"แอดมิน: ใส่รหัสเนื้อหาครั้งแรกครั้งเดียว ระบบจะบันทึกให้ผู้ใช้ทุกคนอัตโนมัติ":"ระบบยังตั้งค่าไม่เสร็จ ใส่รหัสเข้าแอป (ถ้ามี) หรือแจ้งผู้ดูแล")}
 let syncedOnce=false;
 async function afterUnlock(){
+  setTimeout(maybeOnboard,50);
   if(!AUTH.ready||!AUTH.user)return;
   if(AUTH.role==="admin"&&UNLOCK_PW){try{const k=await contentKey();if(!k)await AUTH.sb.from("app_secrets").upsert({key:"content_pw",value:UNLOCK_PW})}catch(e){}}
   if(syncedOnce)return;syncedOnce=true;
@@ -487,6 +492,100 @@ async function openAdmin(){if(AUTH.role!=="admin")return;
   document.querySelectorAll("select[data-uid]").forEach(s=>s.onchange=async()=>{const{error}=await AUTH.sb.from("profiles").update({[s.dataset.f]:s.value}).eq("id",s.dataset.uid);toast(error?"บันทึกไม่สำเร็จ: "+error.message:"บันทึกแล้ว")});
 }
 
+
+
+/* =================== LEARNER PROFILE: nickname, stats, timeline =================== */
+const LCOL={zh:"#cf3b2a",de:"#c08a12",en:"#2463c9",fr:"#7a3fb8",th:"#16846b"},LTH={zh:"จีน",de:"เยอรมัน",en:"อังกฤษ",fr:"ฝรั่งเศส",th:"ไทย"};
+function nick(){if(AUTH.nick!=null)return AUTH.nick;try{return localStorage.getItem("koel-nick")||""}catch(e){return""}}
+function langStats(l){const s=store[l]||{},cards=Object.values(s.cards||{}),log=s.log||{},tests=s.tests||[];
+  const dk=dayKey(Date.now()),yk=dayKey(Date.now()-DAY),streak=(s.lastDay===dk||s.lastDay===yk)?s.streak||0:0;
+  return{learned:cards.length,known:cards.filter(c=>c.k||c.b>=2).length,xp:s.xpTotal||0,streak,tests,days:Object.keys(log).length,goal:s.goal,log}}
+async function openProfile(){
+  const el=overlay("ข้อมูลผู้เรียน",`<p class="hint">กำลังโหลด…</p>`);
+  const per=Object.fromEntries(LANGS.map(l=>[l,langStats(l)])),act=LANGS.filter(l=>per[l].learned||per[l].xp);
+  const tot={learned:0,known:0,xp:0,tests:0,days:new Set()};for(const l of LANGS){const p=per[l];tot.learned+=p.learned;tot.known+=p.known;tot.xp+=p.xp;tot.tests+=p.tests.length;Object.keys(p.log).forEach(d=>tot.days.add(d))}
+  const best=Math.max(0,...LANGS.map(l=>per[l].streak));
+  /* last 30 days, stacked by language */
+  const days=[...Array(30)].map((_,i)=>{const t=Date.now()-(29-i)*DAY;return{k:dayKey(t),d:new Date(t)}});
+  const vals=days.map(d=>LANGS.map(l=>per[l].log[d.k]||0)),mx=Math.max(20,...vals.map(v=>v.reduce((a,b)=>a+b,0)));
+  const W=600,H=170,bw=W/30;
+  const chart=`<svg viewBox="0 0 ${W} ${H+22}" style="width:100%;height:auto" role="img" aria-label="XP รายวัน 30 วันล่าสุด">${days.map((d,i)=>{let y=H;return LANGS.map((l,j)=>{const h=vals[i][j]/mx*(H-8);if(!h)return"";y-=h;return`<rect x="${i*bw+2}" y="${y}" width="${bw-4}" height="${h}" rx="3" fill="${LCOL[l]}"><title>${d.d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})} · ${LTH[l]} ${vals[i][j]} XP</title></rect>`}).join("")+(i%7===1||i===29?`<text x="${i*bw+bw/2}" y="${H+16}" font-size="11" text-anchor="middle" fill="#6b6862">${d.d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})}</text>`:"")}).join("")}<line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#e6e3dc"/></svg>`;
+  /* timeline events */
+  const ev=[];
+  for(const l of LANGS){const p=per[l];
+    if(p.goal&&p.goal.start)ev.push({t:p.goal.start,ic:"🎯",l,txt:`เริ่มเรียน${LTH[l]} ตั้งเป้า ${p.goal.m} เดือน`});
+    for(const x of p.tests)ev.push({t:x.d,ic:x.pct>=75?"🏆":"📝",l,txt:`${x.title}`,chip:x.pct+"%"});
+    const ds=Object.keys(p.log).sort((a,b)=>new Date(a)-new Date(b));let run=0;
+    for(const d of ds){const xp=p.log[d];if(xp>=60)ev.push({t:new Date(d).getTime()+43200000,ic:"🔥",l,txt:`เรียน${LTH[l]}ได้ ${xp} XP ในวันเดียว`})}
+    for(const m of [10,50,100,250,500,1000])if(p.learned>=m)ev.push({t:null,ic:"⭐",l,txt:`เรียนครบ ${m} ประโยค/คำในภาษา${LTH[l]}`,ms:m});}
+  const dated=ev.filter(e=>e.t).sort((a,b)=>b.t-a.t).slice(0,40),miles=ev.filter(e=>!e.t).sort((a,b)=>b.ms-a.ms);
+  let lastDay="";
+  const tl=dated.map(e=>{const d=new Date(e.t).toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"short",year:"2-digit"}),head=d!==lastDay?`<div class="sec">${d}</div>`:"";lastDay=d;
+    return head+`<div class="tl-row"><span class="tl-ic" style="background:color-mix(in srgb,${LCOL[e.l]} 14%,#fff)">${e.ic}</span><span style="flex:1;min-width:0">${esc(e.txt)}<small style="display:block;color:${LCOL[e.l]};font-weight:700">${LTH[e.l]}</small></span>${e.chip?`<span class="chip ${parseInt(e.chip)>=75?"ok":"warn"}">${e.chip}</span>`:""}</div>`}).join("");
+  $("#stage").innerHTML=`
+   <div class="panel" style="display:flex;flex-direction:column;gap:12px"><div class="row-flex">${mascot("happy",72)}<div style="min-width:0"><h2 style="font-size:22px">${esc(nick()||"ผู้เรียน Koel")}</h2><p class="hint" style="margin:0">${AUTH.user?esc(AUTH.user.email||""):"ยังไม่ได้ล็อกอิน (เก็บในเครื่องนี้)"}${AUTH.user&&AUTH.user.created_at?" · เริ่มใช้ "+new Date(AUTH.user.created_at).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}):""}</p></div></div>
+     <form class="row-flex" id="nk-f" style="gap:8px"><label class="field" style="flex:1;margin:0">ชื่อเล่น<input id="nk" maxlength="30" value="${esc(nick())}" placeholder="เช่น นก"></label><button class="primary" style="width:auto;align-self:flex-end;padding:11px 18px">บันทึก</button></form></div>
+   <div class="kpis"><div class="st"><b class="flame">${best}</b><small>วันติดต่อกันสูงสุดตอนนี้</small></div><div class="st"><b>${tot.days.size}</b><small>วันที่เรียน</small></div><div class="st"><b>${tot.learned}</b><small>ประโยค/คำที่เรียนแล้ว</small></div><div class="st"><b>${tot.known}</b><small>จำได้แม่น</small></div><div class="st"><b>${tot.xp}</b><small>XP สะสม</small></div><div class="st"><b>${tot.tests}</b><small>ครั้งที่เล่นเกม/สอบ</small></div></div>
+   <div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>พัฒนาการ 30 วันล่าสุด</h2>${chart}<div class="row-flex" style="flex-wrap:wrap;gap:10px">${LANGS.map(l=>`<span class="hint"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${LCOL[l]};margin-right:4px"></i>${LTH[l]}</span>`).join("")}</div></div>
+   <div class="panel" style="display:flex;flex-direction:column;gap:10px"><h2>แต่ละภาษา</h2>${act.length?act.map(l=>{const p=per[l],tot2=(DATA[l].cards||[]).length;return`<div style="display:grid;gap:4px"><div class="row-flex" style="justify-content:space-between"><b style="color:${LCOL[l]}">ภาษา${LTH[l]}</b><span class="hint">${p.learned}/${tot2} · ${p.xp} XP${p.goal?" · เป้า "+p.goal.m+" เดือน":""}</span></div><div class="bar"><i style="width:${tot2?Math.round(p.learned/tot2*100):0}%;background:${LCOL[l]}"></i></div></div>`}).join(""):`<p class="hint">ยังไม่ได้เริ่มเรียน เริ่มที่หน้า "วันนี้" ได้เลย</p>`}</div>
+   ${miles.length?`<div class="panel" style="display:flex;flex-direction:column;gap:8px"><h2>ความสำเร็จ</h2><div class="row-flex" style="flex-wrap:wrap;gap:8px">${miles.map(e=>`<span class="chip ok" style="font-size:13.5px;padding:5px 12px">${e.ic} ${esc(e.txt)}</span>`).join("")}</div></div>`:""}
+   <div class="panel" style="display:flex;flex-direction:column;gap:6px"><h2>ไทม์ไลน์การเรียน</h2>${tl||`<p class="hint">ยังไม่มีกิจกรรม เรียนหรือเล่นเกมแล้วจะขึ้นที่นี่</p>`}</div>`;
+  $("#nk-f").onsubmit=async e=>{e.preventDefault();const v=$("#nk").value.trim();AUTH.nick=v;try{localStorage.setItem("koel-nick",v)}catch(_){}
+    if(AUTH.user){const{error}=await AUTH.sb.from("profiles").update({display_name:v}).eq("id",AUTH.user.id);toast(error?"บันทึกในบัญชีไม่สำเร็จ เก็บไว้ในเครื่องแล้ว":"บันทึกชื่อเล่นแล้ว")}else toast("บันทึกชื่อเล่นแล้ว");
+    openProfile()}}
+
+/* =================== ONBOARDING: new users, once, after login (animated "how to start" + language pick) =================== */
+const ONB_LANGS=[["zh","中文","ภาษาจีน"],["de","Deutsch","ภาษาเยอรมัน"],["en","English","ภาษาอังกฤษ"],["fr","Français","ภาษาฝรั่งเศส"],["th","ไทย","Thai, for foreigners"]];
+const onbKey=()=>"koel-onb-"+((AUTH.user&&AUTH.user.id)||"local");
+function needOnboarding(){try{if(localStorage.getItem(onbKey()))return false}catch(e){}
+  if(AUTH.user)return AUTH.onboarded===false;
+  return !LANGS.some(l=>store[l]&&(store[l].goal||Object.keys(store[l].cards||{}).length))}
+function markOnboarded(){try{localStorage.setItem(onbKey(),"1")}catch(e){}
+  if(AUTH.user){AUTH.onboarded=true;AUTH.sb.from("profiles").update({onboarded:true}).eq("id",AUTH.user.id).then(()=>{},()=>{})}}
+function showOnboarding(){if($("#onb"))return;
+  const el=document.createElement("div");el.id="onb";el.setAttribute("role","dialog");el.setAttribute("aria-label","เริ่มต้นใช้งาน Koel");document.body.appendChild(el);document.body.style.overflow="hidden";
+  const name=(AUTH.user&&AUTH.user.user_metadata&&AUTH.user.user_metadata.display_name)||"";
+  const SL=[
+   {dur:4200,txt:`<span class="onb-tag">เริ่มต้นใช้งาน</span><h2>สวัสดี${name?" "+esc(name):""} ฉันคือ Koel</h2><p>เพื่อนเรียนภาษาที่พูดได้จริง จีน เยอรมัน อังกฤษ ฝรั่งเศส และไทย ใช้ฟรีทั้งหมด ขอพาดูวิธีใช้ 3 ขั้นสั้น ๆ</p>`,art:()=>`<div class="onb-hero">${mascot("happy",220)}</div>`},
+   {dur:4600,txt:`<span class="onb-tag">ขั้นที่ 1</span><h2>เลือกภาษาและเป้าหมาย</h2><p>แตะภาษาด้านบนของแอป แล้วเลือกว่าอยากคุยได้ใน 3 หรือ 6 เดือน แอปจะจัดประโยคใหม่ให้พอดีทุกวัน</p>`,
+    art:()=>`<div class="onb-phone"><div class="t">อยากเรียนภาษาอะไร</div><div class="g">${ONB_LANGS.map((l,i)=>`<div class="c${i===2?" tap":""}">${l[1]}</div>`).join("")}</div><div class="t" style="margin-top:6px">อยากคุยได้ภายใน</div><div class="g"><div class="c"><b style="color:var(--zh);font-size:20px">3</b><br>เดือน</div><div class="c tap2"><b style="color:var(--zh);font-size:20px">6</b><br>เดือน</div></div></div><div class="onb-pk">${mascot("idle",110)}</div>`},
+   {dur:4600,txt:`<span class="onb-tag">ขั้นที่ 2</span><h2>ฟัง เขียน แล้วเล่นเกม</h2><p>กด "เริ่มเลย" ในหน้าวันนี้ ฟังเสียง (เลือกเสียงผู้หญิงหรือผู้ชายได้ที่ ⚙️) ฝึกเขียนตามเส้นประ แล้วทบทวนด้วยเกม</p>`,
+    art:()=>`<div class="onb-phone"><div class="hint" style="color:var(--zh);font-weight:700;text-align:left">ประโยคใหม่ 1/5</div><div class="big">Nice to meet you.</div><div class="hint">ไนซ์ ทู มีท ยู</div><div style="text-align:center;font-weight:700">ยินดีที่ได้รู้จัก</div><div class="g" style="grid-template-columns:repeat(3,1fr);margin-top:6px"><div class="c tile" style="animation-delay:.6s">🎧<br>ฟัง</div><div class="c tile" style="animation-delay:.9s">✍️<br>เขียน</div><div class="c tile" style="animation-delay:1.2s">🧩<br>เกม</div></div><div class="xp">+10 XP</div></div><div class="onb-pk">${mascot("talk",110)}</div>`},
+   {dur:4200,txt:`<span class="onb-tag">ขั้นที่ 3</span><h2>เรียนวันละนิด ทุกวัน</h2><p>ความคืบหน้าบันทึกในบัญชีอัตโนมัติ เปิดมือถือ iPad หรือคอมก็เรียนต่อได้ ระบบจะเรียกประโยคที่ใกล้ลืมกลับมาให้ทวนเอง</p>`,
+    art:()=>`<div class="onb-phone"><div class="t">วันนี้</div><div class="c" style="display:flex;align-items:center;gap:10px;text-align:left"><b style="font-size:28px;color:#e46a1f">7</b><span>วันติดต่อกัน</span></div><div class="c" style="text-align:left">ทบทวน 12 · ใหม่ 5</div><div class="c tap" style="background:var(--zh);color:#fff;border-color:var(--zh)">เริ่มเลย</div></div><div class="onb-pk">${mascot("win",110)}</div>`},
+   {dur:0,txt:`<span class="onb-tag">พร้อมแล้ว</span><h2>อยากเริ่มเรียนภาษาอะไรก่อน</h2><p>เลือกได้ 1 ภาษา เปลี่ยนหรือเรียนเพิ่มทีหลังได้ทุกเมื่อจากแถบภาษาด้านบน</p>`,
+    art:()=>`<div class="onb-langs">${ONB_LANGS.map((l,i)=>`<button data-l="${l[0]}" style="animation-delay:${i*0.08}s"><b>${l[1]}</b><small>${l[2]}</small></button>`).join("")}</div>`}];
+  let i=0,timer=null,t0=0,raf=0;
+  const finish=lg=>{clearTimeout(timer);cancelAnimationFrame(raf);markOnboarded();if(lg){lang=lg;try{localStorage.setItem(LS+"-lang",lg)}catch(e){}tab="today"}el.remove();document.body.style.overflow="";render();scrollTo(0,0)};
+  const draw=()=>{clearTimeout(timer);cancelAnimationFrame(raf);const s=SL[i],last=i===SL.length-1;
+    el.innerHTML=`<div class="onb-bars">${SL.map((_,k)=>`<i><b style="width:${k<i?100:0}%"></b></i>`).join("")}</div>
+     <div class="onb-top">${mascot("idle",36)}${last?"":`<button class="onb-skip" id="onb-skip">ข้ามไปเลือกภาษา</button>`}</div>
+     <div class="onb-body"><div class="onb-art">${s.art()}</div><div class="onb-txt">${s.txt}</div></div>
+     <div class="onb-nav"><button class="ghost" id="onb-back" ${i?"":"style=\"visibility:hidden\""}>‹ ย้อนกลับ</button>${last?"":`<button class="primary" id="onb-next">ถัดไป ›</button>`}</div>`;
+    const bar=el.querySelectorAll(".onb-bars b")[i];
+    if(s.dur){t0=performance.now();const tick=()=>{const p=Math.min(1,(performance.now()-t0)/s.dur);bar.style.width=p*100+"%";if(p<1)raf=requestAnimationFrame(tick)};tick();timer=setTimeout(()=>{i++;draw()},s.dur)}
+    else bar.style.width="100%";
+    const n=$("#onb-next");if(n)n.onclick=()=>{i++;draw()};
+    $("#onb-back").onclick=()=>{if(i){i--;draw()}};
+    const sk=$("#onb-skip");if(sk)sk.onclick=()=>{i=SL.length-1;draw()};
+    el.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>finish(b.dataset.l))};
+  draw()}
+function maybeOnboard(){if(DATA&&needOnboarding())showOnboarding()}
+
+
+/* =================== AUTO LOGOUT after 1 hour without use =================== */
+const IDLE_MS=60*60*1000,IDLE_KEY="koel-last-active";
+let idleT=0;
+function touchActive(){const n=Date.now();if(n-idleT<15000)return;idleT=n;try{localStorage.setItem(IDLE_KEY,String(n))}catch(e){}}
+["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,touchActive,{passive:true,capture:true}));
+function idleTooLong(){let l=0;try{l=+localStorage.getItem(IDLE_KEY)||0}catch(e){}return l>0&&Date.now()-l>IDLE_MS}
+async function idleLogout(){if(!AUTH.user)return;try{await AUTH.sb.auth.signOut()}catch(e){}
+  try{localStorage.removeItem(PWK);localStorage.removeItem(IDLE_KEY)}catch(e){}
+  AUTH.user=null;dbDoc=null;syncedOnce=false;closeSheet();const st=$("#study");if(st)st.hidden=true;const ob=$("#onb");if(ob)ob.remove();
+  authBox("in","","ออกจากระบบอัตโนมัติ เพราะไม่ได้ใช้งานเกิน 1 ชั่วโมง เข้าสู่ระบบอีกครั้งเพื่อเรียนต่อ")}
+setInterval(()=>{if(AUTH.user&&idleTooLong())idleLogout()},60000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&AUTH.user&&idleTooLong())idleLogout()});
+
 /* =================== BOOT =================== */
 (async function boot(){
   const sbOk=await initSB();
@@ -495,7 +594,8 @@ async function openAdmin(){if(AUTH.role!=="admin")return;
   const{data:{session}}=await AUTH.sb.auth.getSession();
   AUTH.sb.auth.onAuthStateChange((ev)=>{if(ev==="PASSWORD_RECOVERY")newPasswordBox()});
   if(isRecovery&&session)return newPasswordBox();
-  if(session){let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
+  if(session&&idleTooLong()){try{await AUTH.sb.auth.signOut()}catch(e){}try{localStorage.removeItem(PWK);localStorage.removeItem(IDLE_KEY)}catch(e){}return authBox("in","","ออกจากระบบอัตโนมัติ เพราะไม่ได้ใช้งานเกิน 1 ชั่วโมง")}
+  if(session){await loadProfile();let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
     if(saved){try{await tryUnlock(saved)}catch(e){}}
     return signedIn()}
   showAuth();
