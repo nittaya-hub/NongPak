@@ -431,11 +431,9 @@ function authBox(mode,msg,ok){const g=$("#gate")||Object.assign(document.createE
    <p class="gerr" role="alert">${msg||""}</p>${ok?`<p class="ok">${ok}</p>`:""}
    <button class="primary" type="submit">${mode==="in"?"เข้าสู่ระบบ":mode==="up"?"สมัครสมาชิกฟรี":"ส่งลิงก์ตั้งรหัสใหม่"}</button>
    ${mode==="in"?`<button type="button" class="linkbtn" id="a-forgot">ลืมรหัสผ่าน?</button>`:mode==="reset"?`<button type="button" class="linkbtn" data-am="in">กลับไปเข้าสู่ระบบ</button>`:""}
-   <button type="button" class="linkbtn" id="a-code" style="color:var(--muted)">มีรหัสเข้าแอปแบบเดิม</button>
    <p class="copy">© 2026 Koel สงวนลิขสิทธิ์</p></form>`;
   g.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>authBox(b.dataset.am));
   const fg=$("#a-forgot");if(fg)fg.onclick=()=>authBox("reset");
-  $("#a-code").onclick=()=>{g.remove();codeGate()};
   $("#aform").onsubmit=async e=>{e.preventDefault();const btn=g.querySelector('button[type="submit"]');btn.disabled=true;btn.textContent="กำลังดำเนินการ…";
     const email=$("#a-email").value.trim(),pw=$("#a-pw")&&$("#a-pw").value;const redirect=location.origin+location.pathname;
     try{
@@ -445,21 +443,32 @@ function authBox(mode,msg,ok){const g=$("#gate")||Object.assign(document.createE
       else{const{error}=await AUTH.sb.auth.signInWithPassword({email,password:pw});if(error)throw error}
       await signedIn()}
     catch(err){const m=String(err&&err.message||err);authBox(mode,/Invalid login/i.test(m)?"อีเมลหรือรหัสผ่านไม่ถูกต้อง":/confirm/i.test(m)?"ยังไม่ได้ยืนยันอีเมล ตรวจกล่องจดหมายก่อนนะ":/registered|exists/i.test(m)?"อีเมลนี้สมัครแล้ว ลองเข้าสู่ระบบ":/fetch|network/i.test(m)?"เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่":"ทำรายการไม่สำเร็จ: "+m)}};
+  eyeify($("#a-pw"));
   setTimeout(()=>{const i=$("#a-email");if(i)i.focus()},50)}
 function showAuth(){authBox("in")}
+const EYE_ON='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+function eyeify(inp){if(!inp||inp.dataset.eye)return;inp.dataset.eye=1;const w=document.createElement("div");w.className="pwwrap";inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+  const b=document.createElement("button");b.type="button";b.className="pweye";b.setAttribute("aria-label","แสดงรหัสผ่าน");b.innerHTML=EYE_ON;w.appendChild(b);
+  b.onclick=()=>{const show=inp.type==="password";inp.type=show?"text":"password";b.innerHTML=show?EYE_OFF:EYE_ON;b.setAttribute("aria-label",show?"ซ่อนรหัสผ่าน":"แสดงรหัสผ่าน");b.setAttribute("aria-pressed",show);inp.focus()}}
 function newPasswordBox(){const g=$("#gate")||Object.assign(document.createElement("div"),{id:"gate"});if(!g.parentNode)document.body.appendChild(g);
   g.innerHTML=`<form class="gbox auth" id="npf">${mascot("idle",100)}<h1>ตั้งรหัสผ่านใหม่</h1><input id="np" type="password" minlength="6" required placeholder="รหัสผ่านใหม่ อย่างน้อย 6 ตัว" autocomplete="new-password"><p class="gerr" id="nperr"></p><button class="primary">บันทึก</button></form>`;
+  eyeify($("#np"));
   $("#npf").onsubmit=async e=>{e.preventDefault();const{error}=await AUTH.sb.auth.updateUser({password:$("#np").value});if(error){$("#nperr").textContent=error.message;return}g.remove();await signedIn()}}
 /* fall back to the original password screen (also how the admin seeds the content key) */
 function codeGate(msg){gateBoot().then(()=>{const h=$("#gate h1");if(h&&msg)h.insertAdjacentHTML("afterend",`<p class="hint">${msg}</p>`);
-  const f=$("#gform");if(f&&AUTH.ready&&!AUTH.user)f.insertAdjacentHTML("beforeend",`<button type="button" class="linkbtn" id="g-back">เข้าสู่ระบบด้วยอีเมลแทน</button>`);const b=$("#g-back");if(b)b.onclick=()=>{$("#gate").remove();showAuth()}})}
+  eyeify($("#gpw"))})}
 async function signedIn(){idleT=0;touchActive();await loadProfile();
   if(AUTH.status==="blocked"){await AUTH.sb.auth.signOut();return authBox("in","บัญชีนี้ถูกระงับ ติดต่อผู้ดูแล")}
   if(DATA){afterUnlock();return}
   let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
   const key=await contentKey();
   try{await tryUnlock(key||saved);return}catch(e){}
-  codeGate(AUTH.role==="admin"?"แอดมิน: ใส่รหัสเนื้อหาครั้งแรกครั้งเดียว ระบบจะบันทึกให้ผู้ใช้ทุกคนอัตโนมัติ":"ระบบยังตั้งค่าไม่เสร็จ ใส่รหัสเข้าแอป (ถ้ามี) หรือแจ้งผู้ดูแล")}
+  if(AUTH.role==="admin")return codeGate("แอดมิน: ใส่รหัสเนื้อหาครั้งแรกครั้งเดียว ระบบจะบันทึกให้ผู้ใช้ทุกคนอัตโนมัติ");
+  notReady()}
+function notReady(){const g=$("#gate")||Object.assign(document.createElement("div"),{id:"gate"});if(!g.parentNode)document.body.appendChild(g);document.body.style.overflow="hidden";
+  g.innerHTML=`<div class="gbox">${mascot("think",110)}<h1>Koel</h1><p class="hint">ระบบกำลังเตรียมบทเรียน ลองใหม่อีกครั้งในอีกสักครู่ หรือแจ้งผู้ดูแลระบบ</p><button class="primary" id="nr-retry">ลองใหม่</button><button class="linkbtn" id="nr-out">ออกจากระบบ</button></div>`;
+  $("#nr-retry").onclick=()=>location.reload();$("#nr-out").onclick=async()=>{await AUTH.sb.auth.signOut();location.reload()}}
 let syncedOnce=false;
 async function afterUnlock(){
   setTimeout(maybeOnboard,50);
@@ -589,7 +598,10 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 /* =================== BOOT =================== */
 (async function boot(){
   const sbOk=await initSB();
-  if(!sbOk){gateBoot();return}
+  if(!sbOk){let saved=null;try{saved=localStorage.getItem(PWK)}catch(e){}
+    if(saved){try{await tryUnlock(saved);return}catch(e){}}
+    const g=Object.assign(document.createElement("div"),{id:"gate"});document.body.appendChild(g);document.body.style.overflow="hidden";
+    g.innerHTML=`<div class="gbox">${mascot("oops",110)}<h1>Koel</h1><p class="hint">เชื่อมต่ออินเทอร์เน็ตไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่</p><button class="primary" onclick="location.reload()">ลองใหม่</button></div>`;return}
   const isRecovery=/type=recovery/.test(location.hash);
   const{data:{session}}=await AUTH.sb.auth.getSession();
   AUTH.sb.auth.onAuthStateChange((ev)=>{if(ev==="PASSWORD_RECOVERY")newPasswordBox()});

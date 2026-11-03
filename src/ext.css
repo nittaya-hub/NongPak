@@ -220,3 +220,7 @@ button,.opt,.tile,.gcard{-webkit-tap-highlight-color:transparent}
 .tl-row:last-child{border-bottom:0}
 .tl-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none}
 .kpis .st b{font-size:24px}
+.pwwrap{position:relative;width:100%}
+.pwwrap input{width:100%;padding-right:52px!important}
+.pweye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;background:none;border-radius:10px;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.pweye:hover,.pweye[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
